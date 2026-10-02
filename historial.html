@@ -267,7 +267,102 @@
       document.getElementById('filtro-busqueda').value = '';
       aplicarFiltros();
     }
+    // ===== FUNCIONES DE EDICION EN LINEA =====
+    function editarFila(id) {
+      // Buscar el registro en el array
+      const cobro = todosLosDatos.find(c => c.id === id);
+      if (!cobro) return;
 
+      const esSupervivencia = cobro.banco_detalle && cobro.banco_detalle.toLowerCase().includes('supervivencia');
+      const fila = document.getElementById('fila-' + id);
+      if (!fila) return;
+
+      // Reemplazar la fila por un formulario editable
+      fila.innerHTML = `
+        <td>
+          <select id="edit-tipo-${id}" class="form-select form-select-sm">
+            <option value="Sueldo" ${!esSupervivencia ? 'selected' : ''}>Sueldo</option>
+            <option value="Supervivencia" ${esSupervivencia ? 'selected' : ''}>Supervivencia</option>
+          </select>
+        </td>
+        <td>
+          <input type="date" id="edit-fecha-${id}" class="form-control form-control-sm" value="${cobro.recibo_vision_fecha || ''}">
+        </td>
+        <td>
+          <input type="number" step="0.01" id="edit-pesos-${id}" class="form-control form-control-sm" value="${cobro.monto_pesos || ''}" ${esSupervivencia ? 'disabled' : ''}>
+        </td>
+        <td>
+          <input type="number" step="0.01" id="edit-euros-${id}" class="form-control form-control-sm" value="${cobro.monto_euros || ''}" ${esSupervivencia ? 'disabled' : ''}>
+        </td>
+        <td>
+          <input type="number" step="0.01" id="edit-cotizacion-${id}" class="form-control form-control-sm" value="${cobro.cotizacion_banco_euro || ''}" ${esSupervivencia ? 'disabled' : ''}>
+        </td>
+        <td>
+          <input type="text" id="edit-banco-${id}" class="form-control form-control-sm" value="${cobro.banco_detalle || ''}">
+        </td>
+        <td>
+          <input type="text" id="edit-obs-${id}" class="form-control form-control-sm" value="${cobro.obs || ''}">
+        </td>
+        <td class="text-center">
+          <button class="btn btn-sm btn-success me-1" onclick="guardarEdicion(${id})" title="Guardar">Guardar</button>
+          <button class="btn btn-sm btn-secondary" onclick="cancelarEdicion(${id})" title="Cancelar">Cancelar</button>
+        </td>
+      `;
+    }
+
+    async function guardarEdicion(id) {
+      const tipo = document.getElementById('edit-tipo-' + id).value;
+      const fecha = document.getElementById('edit-fecha-' + id).value;
+      const pesos = document.getElementById('edit-pesos-' + id).value;
+      const euros = document.getElementById('edit-euros-' + id).value;
+      const cotizacion = document.getElementById('edit-cotizacion-' + id).value;
+      const banco = document.getElementById('edit-banco-' + id).value;
+      const obs = document.getElementById('edit-obs-' + id).value;
+
+      const esSupervivencia = tipo === 'Supervivencia';
+      const bancoFinal = esSupervivencia ? 'Tramite Supervivencia' : banco;
+
+      // Armar el objeto con los cambios
+      const updates = {
+        recibo_vision_fecha: fecha || null,
+        monto_pesos: esSupervivencia ? 0 : parseFloat(pesos) || 0,
+        monto_euros: esSupervivencia ? 0 : parseFloat(euros) || 0,
+        cotizacion_banco_euro: esSupervivencia ? null : parseFloat(cotizacion) || null,
+        banco_detalle: bancoFinal,
+        obs: obs || null
+      };
+
+      // Si es supervivencia, guardar tambien en supervivencia_enviada
+      if (esSupervivencia) {
+        updates.supervivencia_enviada = fecha || null;
+      }
+
+      // Actualizar en Supabase
+      const { error } = await window.db
+        .from('cobros')
+        .update(updates)
+        .eq('id', id);
+
+      if (error) {
+        alert('Error al guardar: ' + error.message);
+        return;
+      }
+
+      // Actualizar el array local
+      const index = todosLosDatos.findIndex(c => c.id === id);
+      if (index !== -1) {
+        todosLosDatos[index] = { ...todosLosDatos[index], ...updates };
+      }
+
+      // Volver a renderizar
+      aplicarFiltros();
+    }
+
+    function cancelarEdicion(id) {
+      aplicarFiltros();
+    }
+
+    
     async function eliminarRegistro(id) {
       if (!confirm('Estas seguro de que quieres eliminar este registro? Esta accion no se puede deshacer.')) return;
 
