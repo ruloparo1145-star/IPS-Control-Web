@@ -205,7 +205,7 @@
       renderizarTabla();
     }
 
-    function renderizarTabla() {
+        function renderizarTabla() {
       const tbody = document.getElementById('tabla-historial');
 
       if (datosFiltrados.length === 0) {
@@ -221,12 +221,28 @@
           ? '<span class="badge bg-warning text-dark">Supervivencia</span>' 
           : '<span class="badge bg-primary">Sueldo</span>';
 
-        // Si es supervivencia, mostrar fechas de envio/recepcion
         let fechaMostrar = c.recibo_vision_fecha || '-';
         if (esSupervivencia && c.supervivencia_enviada) {
           fechaMostrar = c.supervivencia_enviada;
         }
 
+        html += `
+          <tr id="fila-${c.id}" class="${claseFila}">
+            <td>${tipoBadge}</td>
+            <td>${fechaMostrar}</td>
+            <td>${esSupervivencia ? '-' : (c.monto_pesos ? '$' + parseFloat(c.monto_pesos).toLocaleString('es-AR') : '-')}</td>
+            <td>${esSupervivencia ? '-' : (c.monto_euros ? 'EUR ' + parseFloat(c.monto_euros).toLocaleString('es-ES') : '-')}</td>
+            <td>${esSupervivencia ? '-' : (c.cotizacion_banco_euro || '-')}</td>
+            <td><small>${c.banco_detalle || '-'}</small></td>
+            <td><small>${c.obs || ''}</small></td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-primary me-1" onclick="editarFila(${c.id})" title="Editar">Editar</button>
+              <button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(${c.id})" title="Eliminar">X</button>
+            </td>
+          </tr>`;
+      });
+      tbody.innerHTML = html;
+    }
         html += `
           <tr class="${claseFila}">
             <td>${tipoBadge}</td>
