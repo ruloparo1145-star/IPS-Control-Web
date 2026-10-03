@@ -426,10 +426,41 @@
       renderizarConsultas();
     }
 
-    async function cargarAnalisis() {
-      var result = await window.db.from('visitas_medicas').select('*').eq('tipo', 'analisis').order('fecha', { ascending: false });
+      async function cargarAnalisis() {
+      // Traer los registros padre y sus valores asociados
+      var result = await window.db
+        .from('visitas_medicas')
+        .select('*, analisis_valores(*)')
+        .eq('tipo', 'analisis')
+        .order('fecha', { ascending: false });
+      
       if (result.error) { console.error(result.error); return; }
-      todosLosDatos.analisis = result.data || [];
+      
+      // Combinar los datos de ambas tablas en un solo objeto
+      todosLosDatos.analisis = (result.data || []).map(vm => {
+        var valores = (vm.analisis_valores && vm.analisis_valores.length > 0) ? vm.analisis_valores[0] : {};
+        return {
+          id: vm.id,
+          fecha: vm.fecha,
+          edad: valores.edad || vm.edad,
+          pais: valores.pais || vm.pais,
+          colesterol_total: valores.colesterol_total,
+          hdl_bueno: valores.hdl_bueno,
+          ldl_malo: valores.ldl_malo,
+          trigliceridos: valores.trigliceridos,
+          glucosa: valores.glucosa,
+          creatinina: valores.creatinina,
+          sodio: valores.sodio,
+          potasio: valores.potasio,
+          psa: valores.psa,
+          magnesio: valores.magnesio,
+          vitamina_d: valores.vitamina_d,
+          observaciones: vm.observaciones,
+          archivo_nombre: vm.archivo_nombre,
+          archivo_url: vm.archivo_url
+        };
+      });
+      
       renderizarAnalisis();
     }
 
