@@ -22,6 +22,13 @@
       background-color: #f0fbfc !important;
       font-weight: bold;
     }
+    .preview-monto {
+      font-size: 0.85rem;
+      color: #6c757d;
+      margin-top: 4px;
+      min-height: 20px;
+    }
+    .preview-monto.ok { color: #28a745; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -66,7 +73,8 @@
             <div class="row mb-3">
               <div class="col-md-6">
                 <label class="form-label">Monto en Pesos (ARS)</label>
-                <input type="number" step="0.01" id="monto_pesos" class="form-control" required placeholder="Ej: 1274064.93">
+                <input type="text" inputmode="decimal" id="monto_pesos" class="form-control" required placeholder="Ej: 1.546.934,20" oninput="previsualizarMonto()">
+                <div id="preview-monto" class="preview-monto"></div>
               </div>
               <div class="col-md-6">
                 <label class="form-label">Fecha del Recibo IPS</label>
@@ -74,12 +82,11 @@
               </div>
             </div>
 
-            <!-- Bloque de cotizacion con BCRA + descuento -->
+            <!-- Bloque de cotizacion -->
             <div class="card bg-light mb-3">
               <div class="card-body">
                 <label class="form-label"><strong>Cotizacion del <span id="label-moneda">Euro Oficial</span></strong></label>
 
-                <!-- Cotizacion BCRA -->
                 <div class="row mb-2">
                   <div class="col-md-8">
                     <label class="form-label small">Cotizacion BCRA (referencia)</label>
@@ -92,7 +99,6 @@
                   </div>
                 </div>
 
-                <!-- Descuento del banco -->
                 <div class="row mb-2">
                   <div class="col-md-8">
                     <label class="form-label small">Descuento del Banco (%)</label>
@@ -103,7 +109,6 @@
                   </div>
                 </div>
 
-                <!-- Cotizacion final editable -->
                 <div class="row mb-2">
                   <div class="col-12">
                     <label class="form-label small"><strong>Cotizacion Final (editable)</strong></label>
@@ -115,7 +120,7 @@
               </div>
             </div>
 
-            <!-- Comisiones fijas -->
+            <!-- Comisiones -->
             <div class="card bg-light mb-3">
               <div class="card-body">
                 <h6 class="text-muted mb-3">Comisiones Fijas (en <span id="label-moneda-com">Euros</span>)</h6>
@@ -211,6 +216,68 @@
       BRL: { nombre: 'Real', plural: 'Reales', endpoint: 'brl', descripcion: 'Real - Brasil' }
     };
 
+    // ============================================================
+    // PARSEAR MONTO: acepta cualquier formato
+    // ============================================================
+    function parsearMonto(valor) {
+      if (valor === null || valor === undefined) return 0;
+      var v = String(valor).trim().replace(/\s/g, '');
+      if (v === '') return 0;
+
+      var tieneComa = v.indexOf(',') !== -1;
+      var tienePunto = v.indexOf('.') !== -1;
+
+      if (tieneComa) {
+        // Formato argentino: puntos = miles, coma = decimal
+        // Ej: 1.546.934,20 â†’ 1546934.20
+        v = v.replace(/\./g, '');
+        v = v.replace(',', '.');
+      } else if (tienePunto) {
+        var partes = v.split('.');
+        if (partes.length > 2) {
+          // MÃºltiples puntos: el Ãºltimo es decimal, los demÃ¡s son miles
+          // Ej: 1.546.934.20 â†’ 1546934.20
+          var ultimoGrupo = partes.pop();
+          v = partes.join('') + '.' + ultimoGrupo;
+        } else if (partes.length === 2) {
+          // Un solo punto: si tiene 3 dÃ­gitos despuÃ©s, es separador de miles
+          // Ej: 1.546 â†’ 1546 ; 1546.20 â†’ 1546.20
+          if (partes[1].length === 3 && partes[0].length >= 1) {
+            v = partes[0] + partes[1];
+          }
+        }
+      }
+
+      var num = parseFloat(v);
+      return isNaN(num) ? 0 : num;
+    }
+
+    // Previsualizar el monto mientras se escribe
+    function previsualizarMonto() {
+      var input = document.getElementById('monto_pesos');
+      var preview = document.getElementById('preview-monto');
+      var valor = input.value;
+
+      if (!valor || valor.trim() === '') {
+        preview.textContent = '';
+        preview.className = 'preview-monto';
+        return;
+      }
+
+      var num = parsearMonto(valor);
+      if (num > 0) {
+        preview.textContent = 'Se interpreta como: $' + num.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        preview.className = 'preview-monto ok';
+      } else {
+        preview.textContent = 'Valor no valido';
+        preview.className = 'preview-monto';
+        preview.style.color = '#dc3545';
+      }
+    }
+
+    // ============================================================
+    // INICIALIZACION
+    // ============================================================
     document.addEventListener('DOMContentLoaded', async function() {
       document.getElementById('fecha_recibo').value = new Date().toISOString().split('T')[0];
 
@@ -298,7 +365,6 @@
       btn.disabled = false;
     }
 
-    // ===== RECALCULAR COTIZACION CON DESCUENTO =====
     function recalcularConDescuento() {
       var valorBCRA = parseFloat(document.getElementById('cotizacion-bcra').value);
       var descuento = parseFloat(document.getElementById('descuento-banco').value) || 0;
@@ -311,8 +377,9 @@
       }
     }
 
+    // ===== CALCULAR =====
     function calcular() {
-      var pesos = parseFloat(document.getElementById('monto_pesos').value);
+      var pesos = parsearMonto(document.getElementById('monto_pesos').value);
       var cotizacion = parseFloat(document.getElementById('cotizacion').value);
       var comArg = parseFloat(document.getElementById('comision_arg').value) || 0;
       var comIta = parseFloat(document.getElementById('comision_ita').value) || 0;
