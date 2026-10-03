@@ -238,8 +238,6 @@
       info.innerHTML = '<span class="text-muted">Conectando con dolarapi.com...</span>';
 
       try {
-        // DolarAPI tiene endpoints para eur, brl, cny
-        // Para USD se usa otro endpoint
         var url;
         if (monedaActual === 'USD') {
           url = 'https://dolarapi.com/v1/dolares/oficial';
@@ -247,32 +245,27 @@
           url = 'https://dolarapi.com/v1/cotizaciones/' + moneda.endpoint;
         }
 
-        console.log('Consultando:', url);
         var res = await fetch(url);
-        console.log('Respuesta status:', res.status);
-
-        if (!res.ok) {
-          throw new Error('El servidor respondio con error ' + res.status);
-        }
+        if (!res.ok) throw new Error('El servidor respondio con error ' + res.status);
 
         var data = await res.json();
-        console.log('Datos recibidos:', data);
-
-        // Extraer el valor de venta
-        var valorVenta = null;
+        var valorBCRA = null;
         var dataObj = Array.isArray(data) ? data[0] : data;
 
         if (dataObj) {
-          if (dataObj.venta) {
-            valorVenta = dataObj.venta;
-          } else if (dataObj.compra) {
-            valorVenta = dataObj.compra;
-          }
+          if (dataObj.venta) valorBCRA = dataObj.venta;
+          else if (dataObj.compra) valorBCRA = dataObj.compra;
         }
 
-        if (valorVenta) {
-          document.getElementById('cotizacion').value = valorVenta;
-          info.innerHTML = '<span class="text-success">' + moneda.nombre + ' Oficial: $' + valorVenta + ' | ' + new Date().toLocaleString('es-AR') + '</span>';
+        if (valorBCRA) {
+          // Aplicar el descuento del banco
+          var descuento = parseFloat(document.getElementById('descuento-banco').value) || 0;
+          var valorReal = valorBCRA * (1 - descuento / 100);
+
+          document.getElementById('cotizacion-bcra').value = valorBCRA;
+          document.getElementById('cotizacion').value = valorReal.toFixed(2);
+
+          info.innerHTML = '<span class="text-success">BCRA: $' + valorBCRA + ' | Banco (con -' + descuento + '%): $' + valorReal.toFixed(2) + '</span>';
         } else {
           info.innerHTML = '<span class="text-danger">No se encontro el valor para ' + moneda.nombre + '. Ingresalo a mano.</span>';
         }
@@ -284,6 +277,16 @@
 
       btn.innerText = textoOriginal;
       btn.disabled = false;
+    }
+
+    // Recalcular cuando el usuario cambia el descuento
+    function recalcularConDescuento() {
+      var valorBCRA = parseFloat(document.getElementById('cotizacion-bcra').value);
+      var descuento = parseFloat(document.getElementById('descuento-banco').value) || 0;
+      if (valorBCRA) {
+        var valorReal = valorBCRA * (1 - descuento / 100);
+        document.getElementById('cotizacion').value = valorReal.toFixed(2);
+      }
     }
 
     function calcular() {
