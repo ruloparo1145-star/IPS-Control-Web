@@ -426,35 +426,59 @@
       renderizarConsultas();
     }
 
-      async function cargarAnalisis() {
-      // Traer los registros padre y sus valores asociados
-      var result = await window.db
+          async function cargarAnalisis() {
+      // Paso 1: Traer los registros padre
+      var resultPadres = await window.db
         .from('visitas_medicas')
-        .select('*, analisis_valores(*)')
+        .select('*')
         .eq('tipo', 'analisis')
         .order('fecha', { ascending: false });
       
-      if (result.error) { console.error(result.error); return; }
+      if (resultPadres.error) { 
+        console.error('Error padres:', resultPadres.error); 
+        return; 
+      }
       
-      // Combinar los datos de ambas tablas en un solo objeto
-      todosLosDatos.analisis = (result.data || []).map(vm => {
-        var valores = (vm.analisis_valores && vm.analisis_valores.length > 0) ? vm.analisis_valores[0] : {};
+      var padres = resultPadres.data || [];
+      
+      // Paso 2: Traer TODOS los valores del usuario
+      var resultValores = await window.db
+        .from('analisis_valores')
+        .select('*');
+      
+      if (resultValores.error) { 
+        console.error('Error valores:', resultValores.error); 
+        return; 
+      }
+      
+      var valores = resultValores.data || [];
+      
+      // Paso 3: Combinar manualmente por analisis_id
+      todosLosDatos.analisis = padres.map(vm => {
+        var valor = null;
+        for (var i = 0; i < valores.length; i++) {
+          if (valores[i].analisis_id === vm.id) {
+            valor = valores[i];
+            break;
+          }
+        }
+        valor = valor || {};
         return {
           id: vm.id,
           fecha: vm.fecha,
-          edad: valores.edad || vm.edad,
-          pais: valores.pais || vm.pais,
-          colesterol_total: valores.colesterol_total,
-          hdl_bueno: valores.hdl_bueno,
-          ldl_malo: valores.ldl_malo,
-          trigliceridos: valores.trigliceridos,
-          glucosa: valores.glucosa,
-          creatinina: valores.creatinina,
-          sodio: valores.sodio,
-          potasio: valores.potasio,
-          psa: valores.psa,
-          magnesio: valores.magnesio,
-          vitamina_d: valores.vitamina_d,
+          edad: valor.edad || '-',
+          pais: valor.pais || '-',
+          colesterol_total: valor.colesterol_total,
+          hdl_bueno: valor.hdl_bueno,
+          ldl_malo: valor.ldl_malo,
+          trigliceridos: valor.trigliceridos,
+          glucosa: valor.glucosa,
+          creatinina: valor.creatinina,
+          sodio: valor.sodio,
+          potasio: valor.potasio,
+          psa: valor.psa,
+          magnesio: valor.magnesio,
+          vitamina_d: valor.vitamina_d,
           observaciones: vm.observaciones,
           archivo_nombre: vm.archivo_nombre,
           archivo_url: vm.archivo_url
