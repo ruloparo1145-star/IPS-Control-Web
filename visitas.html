@@ -506,7 +506,14 @@
         html += '<td>' + (c.medico || '-') + '</td>';
         html += '<td>' + (c.especialidad || '-') + '</td>';
         html += '<td><small>' + (c.observaciones || '') + '</small></td>';
-        html += '<td class="text-center"><small>' + (c.archivo_nombre ? 'ðŸ“Ž' : '-') + '</small></td>';
+       // html += '<td class="text-center"><small>' + (c.archivo_nombre ? 'ðŸ“Ž' : '-') + '</small></td>';
+
+if (c.archivo_url) {
+          html += '<td class="text-center"><button class="btn btn-sm btn-outline-info" onclick="verArchivo(\'' + c.archivo_url + '\')">Ver</button></td>';
+        } else {
+          html += '<td class="text-center">-</td>';
+        }
+        
         html += '<td class="text-center">';
         html += '<button class="btn btn-sm btn-outline-primary me-1" onclick="editarRegistro(\'consulta\',' + c.id + ')">E</button>';
         html += '<button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(' + c.id + ')">X</button>';
