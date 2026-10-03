@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPS Control - Visitas Medicas</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #E8F4F5 !important; }
+    .bg-ips { background-color: #50B9C0 !important; }
+    .btn-ips { background-color: #50B9C0; border-color: #50B9C0; color: white; }
+    .btn-ips:hover { background-color: #3da8af; border-color: #3da8af; color: white; }
+    .card { background-color: #ffffff; }
+    .table-sm td, .table-sm th { padding: 0.4rem; font-size: 0.85rem; vertical-align: middle; }
+    .nav-tabs .nav-link { color: #50B9C0; font-weight: 600; }
+    .nav-tabs .nav-link.active { background-color: #50B9C0; color: white; border-color: #50B9C0; }
+    .valor-ok { color: #28a745; font-weight: bold; }
+    .valor-alerta { color: #ffc107; font-weight: bold; }
+    .valor-peligro { color: #dc3545; font-weight: bold; }
+    .edit-input { font-size: 0.8rem; padding: 0.25rem 0.4rem; }
+    .archivo-item { display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 1px solid #dee2e6; border-radius: 6px; margin-bottom: 5px; }
+    .archivo-item a { text-decoration: none; }
+  </style>
+</head>
+<body>
+  
+  <nav class="navbar navbar-dark bg-ips mb-4">
+    <div class="container">
+      <a href="index.html" class="navbar-brand mb-0 h1 text-white text-decoration-none">Volver al Panel</a>
+      <span class="text-white">Visitas Medicas</span>
+    </div>
+  </nav>
+
+  <div class="container-fluid px-4">
+
+    <!-- TABS -->
+    <ul class="nav nav-tabs mb-3" id="tabsMedicas" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="tab-consultas-btn" data-bs-toggle="tab" data-bs-target="#tab-consultas" type="button" onclick="cambiarTab('consulta')">
+          Consultas Medicas
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-analisis-btn" data-bs-toggle="tab" data-bs-target="#tab-analisis" type="button" onclick="cambiarTab('analisis')">
+          Analisis
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="tab-otras-btn" data-bs-toggle="tab" data-bs-target="#tab-otras" type="button" onclick="cambiarTab('otras')">
+          Otras Consultas
+        </button>
+      </li>
+    </ul>
+
+    <div class="tab-content">
+
+      <!-- PESTANA CONSULTAS -->
+      <div class="tab-pane fade show active" id="tab-consultas">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5>Consultas Medicas</h5>
+          <button class="btn btn-ips" onclick="abrirModal('consulta')">+ Nueva Consulta</button>
+        </div>
+        <div class="card shadow-sm">
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-striped table-sm mb-0">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Medico</th>
+                    <th>Especialidad</th>
+                    <th>Observaciones</th>
+                    <th class="text-center">Archivos</th>
+                    <th class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-consultas">
+                  <tr><td colspan="6" class="text-center">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PESTANA ANALISIS -->
+      <div class="tab-pane fade" id="tab-analisis">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5>Analisis de Sangre y Estudios</h5>
+          <button class="btn btn-ips" onclick="abrirModal('analisis')">+ Nuevo Analisis</button>
+        </div>
+        <div class="card shadow-sm mb-3">
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-striped table-sm mb-0">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Edad</th>
+                    <th>Pais</th>
+                    <th>Colest.</th>
+                    <th>HDL</th>
+                    <th>LDL</th>
+                    <th>Triglic.</th>
+                    <th>Creat.</th>
+                    <th>Gluc.</th>
+                    <th>Sodio</th>
+                    <th>Potasio</th>
+                    <th>PSA</th>
+                    <th class="text-center">Archivos</th>
+                    <th class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-analisis">
+                  <tr><td colspan="14" class="text-center">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PESTANA OTRAS -->
+      <div class="tab-pane fade" id="tab-otras">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5>Otras Consultas (Dentista, Oftalmologo, etc.)</h5>
+          <button class="btn btn-ips" onclick="abrirModal('otras')">+ Nueva Consulta</button>
+        </div>
+        <div class="card shadow-sm">
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-striped table-sm mb-0">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Profesional</th>
+                    <th>Observaciones</th>
+                    <th class="text-center">Archivos</th>
+                    <th class="text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-otras">
+                  <tr><td colspan="6" class="text-center">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL PARA CONSULTAS -->
+  <div class="modal fade" id="modal-consulta" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-ips text-white">
+          <h5 class="modal-title" id="modal-consulta-titulo">Nueva Consulta</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="consulta-id">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Fecha</label>
+              <input type="date" id="consulta-fecha" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Medico</label>
+              <input type="text" id="consulta-medico" class="form-control" placeholder="Dr. Juan Perez">
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Especialidad</label>
+              <input type="text" id="consulta-especialidad" class="form-control" placeholder="Cardiologo, Clinico, etc.">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Titulo (opcional)</label>
+              <input type="text" id="consulta-titulo" class="form-control" placeholder="Control anual">
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Observaciones</label>
+            <textarea id="consulta-obs" class="form-control" rows="3" placeholder="Diagnostico, indicaciones, etc."></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Archivos adjuntos</label>
+            <input type="file" id="consulta-archivo" class="form-control" accept="image/*,application/pdf" multiple>
+            <div id="consulta-archivos-lista" class="mt-2"></div>
+          </div>
+          <div id="consulta-error" class="text-danger"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-ips" onclick="guardarRegistro('consulta')">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PARA ANALISIS -->
+  <div class="modal fade" id="modal-analisis" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header bg-ips text-white">
+          <h5 class="modal-title" id="modal-analisis-titulo">Nuevo Analisis</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="analisis-id">
+          <div class="row mb-3">
+            <div class="col-md-3">
+              <label class="form-label">Fecha</label>
+              <input type="date" id="analisis-fecha" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Edad</label>
+              <input type="number" id="analisis-edad" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Pais</label>
+              <input type="text" id="analisis-pais" class="form-control" placeholder="Argentina, Italia...">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Titulo (opcional)</label>
+              <input type="text" id="analisis-titulo" class="form-control" placeholder="Analisis anual">
+            </div>
+          </div>
+
+          <h6 class="text-muted mt-3 mb-2">Perfil Lipidico</h6>
+          <div class="row mb-3">
+            <div class="col-md-3">
+              <label class="form-label">Colesterol Total</label>
+              <input type="number" step="0.01" id="analisis-colesterol" class="form-control" oninput="calcularLDL()">
+              <small id="ayuda-colesterol" class="text-muted"></small>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">HDL (Bueno)</label>
+              <input type="number" step="0.01" id="analisis-hdl" class="form-control" oninput="calcularLDL()">
+              <small id="ayuda-hdl" class="text-muted"></small>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">LDL (Malo)</label>
+              <input type="number" step="0.01" id="analisis-ldl" class="form-control" oninput="actualizarSemaforoLDL()">
+              <small id="ayuda-ldl" class="text-muted"></small>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Trigliceridos</label>
+              <input type="number" step="0.01" id="analisis-trigliceridos" class="form-control" oninput="calcularLDL()">
+              <small id="ayuda-trigliceridos" class="text-muted"></small>
+            </div>
+          </div>
+
+          <h6 class="text-muted mt-3 mb-2">Funcion Renal y Metabolica</h6>
+          <div class="row mb-3">
+            <div class="col-md-3">
+              <label class="form-label">Creatinina</label>
+              <input type="number" step="0.01" id="analisis-creatinina" class="form-control" oninput="actualizarSemaforo('creatinina')">
+              <small id="ayuda-creatinina" class="text-muted"></small>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Glucosa</label>
+              <input type="number" step="0.01" id="analisis-glucosa" class="form-control" oninput="actualizarSemaforo('glucosa')">
+              <small id="ayuda-glucosa" class="text-muted"></small>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Sodio</label>
+              <input type="number" step="0.01" id="analisis-sodio" class="form-control" oninput="actualizarSemaforo('sodio')">
+              <small id="ayuda-sodio" class="text-muted"></small>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Potasio</label>
+              <input type="number" step="0.01" id="analisis-potasio" class="form-control" oninput="actualizarSemaforo('potasio')">
+              <small id="ayuda-potasio" class="text-muted"></small>
+            </div>
+          </div>
+
+          <h6 class="text-muted mt-3 mb-2">Otros Valores</h6>
+          <div class="row mb-3">
+            <div class="col-md-3">
+              <label class="form-label">Magnesio</label>
+              <input type="number" step="0.01" id="analisis-magnesio" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Vitamina D</label>
+              <input type="number" step="0.01" id="analisis-vitamina" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">PSA (Prostata)</label>
+              <input type="number" step="0.01" id="analisis-psa" class="form-control" oninput="actualizarSemaforo('psa')">
+              <small id="ayuda-psa" class="text-muted"></small>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Observaciones</label>
+            <textarea id="analisis-obs" class="form-control" rows="2"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Archivos adjuntos (fotos, PDF del analisis)</label>
+            <input type="file" id="analisis-archivo" class="form-control" accept="image/*,application/pdf" multiple>
+            <div id="analisis-archivos-lista" class="mt-2"></div>
+          </div>
+
+          <div id="analisis-error" class="text-danger"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-ips" onclick="guardarRegistro('analisis')">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PARA OTRAS -->
+  <div class="modal fade" id="modal-otras" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-ips text-white">
+          <h5 class="modal-title" id="modal-otras-titulo">Nueva Consulta</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="otras-id">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Fecha</label>
+              <input type="date" id="otras-fecha" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Tipo</label>
+              <select id="otras-tipo" class="form-select">
+                <option value="">Seleccionar...</option>
+                <option value="Dentista">Dentista</option>
+                <option value="Oftalmologo">Oftalmologo</option>
+                <option value="Otorrino">Otorrino</option>
+                <option value="Dermatologo">Dermatologo</option>
+                <option value="Traumatologo">Traumatologo</option>
+                <option value="Kinesiologo">Kinesiologo</option>
+                <option value="Electrocardiograma">Electrocardiograma</option>
+                <option value="Radiografia">Radiografia</option>
+                <option value="Ecografia">Ecografia</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Profesional / Lugar</label>
+            <input type="text" id="otras-medico" class="form-control" placeholder="Dr. Garcia - Clinica San Jose">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Observaciones</label>
+            <textarea id="otras-obs" class="form-control" rows="3"></textarea>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Archivos adjuntos</label>
+            <input type="file" id="otras-archivo" class="form-control" accept="image/*,application/pdf" multiple>
+            <div id="otras-archivos-lista" class="mt-2"></div>
+          </div>
+          <div id="otras-error" class="text-danger"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-ips" onclick="guardarRegistro('otras')">Guardar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+
+  <script>
+    var todosLosDatos = { consulta: [], analisis: [], otras: [] };
+    var tabActual = 'consulta';
+    var modalConsulta, modalAnalisis, modalOtras;
+
+    // Rangos de valores normales
+    var RANGOS = {
+      colesterol: { min: 0, max: 200, alerta: 240, msg: 'Optimo: menos de 200' },
+      hdl: { min: 60, max: 999, alertaInverso: true, msg: 'Optimo: mas de 60' },
+      ldl: { min: 0, max: 100, alerta: 160, msg: 'Optimo: menos de 100' },
+      trigliceridos: { min: 0, max: 150, alerta: 200, msg: 'Optimo: menos de 150' },
+      creatinina: { min: 0.5, max: 1.2, msg: 'Normal: 0.5 a 1.2' },
+      glucosa: { min: 85, max: 100, msg: 'Normal: 85 a 100' },
+      sodio: { min: 135, max: 150, msg: 'Normal: 135 a 150' },
+      potasio: { min: 3.5, max: 5.5, msg: 'Normal: 3.5 a 5.5' },
+      psa: { min: 0, max: 4.5, msg: 'Normal: menos de 4.5' }
+    };
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      modalConsulta = new bootstrap.Modal(document.getElementById('modal-consulta'));
+      modalAnalisis = new bootstrap.Modal(document.getElementById('modal-analisis'));
+      modalOtras = new bootstrap.Modal(document.getElementById('modal-otras'));
+
+      var intentos = 0;
+      while (typeof window.db === 'undefined') {
+        await new Promise(r => setTimeout(r, 200));
+        intentos++;
+        if (intentos > 20) return;
+      }
+
+      var session = await verificarSesion();
+      if (!session) { window.location.href = 'login.html'; return; }
+
+      await cargarTodo();
+    });
+
+    async function cargarTodo() {
+      await cargarConsultas();
+      await cargarAnalisis();
+      await cargarOtras();
+    }
+
+    async function cargarConsultas() {
+      var result = await window.db.from('visitas_medicas').select('*').eq('tipo', 'consulta').order('fecha', { ascending: false });
+      if (result.error) { console.error(result.error); return; }
+      todosLosDatos.consulta = result.data || [];
+      renderizarConsultas();
+    }
+
+    async function cargarAnalisis() {
+      var result = await window.db.from('visitas_medicas').select('*').eq('tipo', 'analisis').order('fecha', { ascending: false });
+      if (result.error) { console.error(result.error); return; }
+      todosLosDatos.analisis = result.data || [];
+      renderizarAnalisis();
+    }
+
+    async function cargarOtras() {
+      var result = await window.db.from('visitas_medicas').select('*').eq('tipo', 'otras').order('fecha', { ascending: false });
+      if (result.error) { console.error(result.error); return; }
+      todosLosDatos.otras = result.data || [];
+      renderizarOtras();
+    }
+
+    function renderizarConsultas() {
+      var tbody = document.getElementById('tabla-consultas');
+      if (todosLosDatos.consulta.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay consultas registradas.</td></tr>';
+        return;
+      }
+      var html = '';
+      todosLosDatos.consulta.forEach(c => {
+        html += '<tr>';
+        html += '<td>' + (c.fecha || '-') + '</td>';
+        html += '<td>' + (c.medico || '-') + '</td>';
+        html += '<td>' + (c.especialidad || '-') + '</td>';
+        html += '<td><small>' + (c.observaciones || '') + '</small></td>';
+        html += '<td class="text-center"><small>' + (c.archivo_nombre ? 'ðŸ“Ž' : '-') + '</small></td>';
+        html += '<td class="text-center">';
+        html += '<button class="btn btn-sm btn-outline-primary me-1" onclick="editarRegistro(\'consulta\',' + c.id + ')">E</button>';
+        html += '<button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(' + c.id + ')">X</button>';
+        html += '</td>';
+        html += '</tr>';
+      });
+      tbody.innerHTML = html;
+    }
+
+    function renderizarAnalisis() {
+      var tbody = document.getElementById('tabla-analisis');
+      if (todosLosDatos.analisis.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted">No hay analisis registrados.</td></tr>';
+        return;
+      }
+      var html = '';
+      todosLosDatos.analisis.forEach(c => {
+        html += '<tr>';
+        html += '<td>' + (c.fecha || '-') + '</td>';
+        html += '<td>' + (c.edad || '-') + '</td>';
+        html += '<td>' + (c.pais || '-') + '</td>';
+        html += '<td class="' + colorValor('colesterol', c.colesterol_total) + '">' + (c.colesterol_total || '-') + '</td>';
+        html += '<td class="' + colorValor('hdl', c.hdl_bueno) + '">' + (c.hdl_bueno || '-') + '</td>';
+        html += '<td class="' + colorValor('ldl', c.ldl_malo) + '">' + (c.ldl_malo || '-') + '</td>';
+        html += '<td class="' + colorValor('trigliceridos', c.trigliceridos) + '">' + (c.trigliceridos || '-') + '</td>';
+        html += '<td class="' + colorValor('creatinina', c.creatinina) + '">' + (c.creatinina || '-') + '</td>';
+        html += '<td class="' + colorValor('glucosa', c.glucosa) + '">' + (c.glucosa || '-') + '</td>';
+        html += '<td class="' + colorValor('sodio', c.sodio) + '">' + (c.sodio || '-') + '</td>';
+        html += '<td class="' + colorValor('potasio', c.potasio) + '">' + (c.potasio || '-') + '</td>';
+        html += '<td class="' + colorValor('psa', c.psa) + '">' + (c.psa || '-') + '</td>';
+        html += '<td class="text-center"><small>' + (c.archivo_nombre ? 'ðŸ“Ž' : '-') + '</small></td>';
+        html += '<td class="text-center">';
+        html += '<button class="btn btn-sm btn-outline-primary me-1" onclick="editarRegistro(\'analisis\',' + c.id + ')">E</button>';
+        html += '<button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(' + c.id + ')">X</button>';
+        html += '</td>';
+        html += '</tr>';
+      });
+      tbody.innerHTML = html;
+    }
+
+    function renderizarOtras() {
+      var tbody = document.getElementById('tabla-otras');
+      if (todosLosDatos.otras.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No hay consultas registradas.</td></tr>';
+        return;
+      }
+      var html = '';
+      todosLosDatos.otras.forEach(c => {
+        html += '<tr>';
+        html += '<td>' + (c.fecha || '-') + '</td>';
+        html += '<td>' + (c.especialidad || '-') + '</td>';
+        html += '<td>' + (c.medico || '-') + '</td>';
+        html += '<td><small>' + (c.observaciones || '') + '</small></td>';
+        html += '<td class="text-center"><small>' + (c.archivo_nombre ? 'ðŸ“Ž' : '-') + '</small></td>';
+        html += '<td class="text-center">';
+        html += '<button class="btn btn-sm btn-outline-primary me-1" onclick="editarRegistro(\'otras\',' + c.id + ')">E</button>';
+        html += '<button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(' + c.id + ')">X</button>';
+        html += '</td>';
+        html += '</tr>';
+      });
+      tbody.innerHTML = html;
+    }
+
+    function colorValor(tipo, valor) {
+      if (!valor || !RANGOS[tipo]) return '';
+      var v = parseFloat(valor);
+      var r = RANGOS[tipo];
+      if (r.alertaInverso) {
+        if (v >= r.min) return 'valor-ok';
+        return 'valor-peligro';
+      }
+      if (v >= r.min && v <= r.max) return 'valor-ok';
+      if (r.alerta && v <= r.alerta) return 'valor-alerta';
+      return 'valor-peligro';
+    }
+
+    function cambiarTab(tipo) {
+      tabActual = tipo;
+    }
+
+    // ===== MODALES =====
+    function abrirModal(tipo) {
+      if (tipo === 'consulta') {
+        document.getElementById('consulta-id').value = '';
+        document.getElementById('consulta-fecha').value = new Date().toISOString().split('T')[0];
+        document.getElementById('consulta-medico').value = '';
+        document.getElementById('consulta-especialidad').value = '';
+        document.getElementById('consulta-titulo').value = '';
+        document.getElementById('consulta-obs').value = '';
+        document.getElementById('consulta-archivo').value = '';
+        document.getElementById('modal-consulta-titulo').innerText = 'Nueva Consulta';
+        modalConsulta.show();
+      } else if (tipo === 'analisis') {
+        document.getElementById('analisis-id').value = '';
+        document.getElementById('analisis-fecha').value = new Date().toISOString().split('T')[0];
+        document.getElementById('analisis-edad').value = '';
+        document.getElementById('analisis-pais').value = '';
+        document.getElementById('analisis-titulo').value = '';
+        document.getElementById('analisis-colesterol').value = '';
+        document.getElementById('analisis-hdl').value = '';
+        document.getElementById('analisis-ldl').value = '';
+        document.getElementById('analisis-trigliceridos').value = '';
+        document.getElementById('analisis-creatinina').value = '';
+        document.getElementById('analisis-glucosa').value = '';
+        document.getElementById('analisis-sodio').value = '';
+        document.getElementById('analisis-potasio').value = '';
+        document.getElementById('analisis-magnesio').value = '';
+        document.getElementById('analisis-vitamina').value = '';
+        document.getElementById('analisis-psa').value = '';
+        document.getElementById('analisis-obs').value = '';
+        document.getElementById('analisis-archivo').value = '';
+        document.getElementById('modal-analisis-titulo').innerText = 'Nuevo Analisis';
+        modalAnalisis.show();
+      } else if (tipo === 'otras') {
+        document.getElementById('otras-id').value = '';
+        document.getElementById('otras-fecha').value = new Date().toISOString().split('T')[0];
+        document.getElementById('otras-tipo').value = '';
+        document.getElementById('otras-medico').value = '';
+        document.getElementById('otras-obs').value = '';
+        document.getElementById('otras-archivo').value = '';
+        document.getElementById('modal-otras-titulo').innerText = 'Nueva Consulta';
+        modalOtras.show();
+      }
+    }
+
+    function calcularLDL() {
+      var col = parseFloat(document.getElementById('analisis-colesterol').value) || 0;
+      var hdl = parseFloat(document.getElementById('analisis-hdl').value) || 0;
+      var tri = parseFloat(document.getElementById('analisis-trigliceridos').value) || 0;
+      if (col && hdl && tri) {
+        var ldl = col - hdl - (tri / 5);
+        document.getElementById('analisis-ldl').value = ldl.toFixed(2);
+        actualizarSemaforoLDL();
+      }
+    }
+
+    function actualizarSemaforoLDL() { actualizarSemaforo('ldl'); }
+
+    function actualizarSemaforo(campo) {
+      var input = document.getElementById('analisis-' + campo);
+      if (!input) return;
+      var ayuda = document.getElementById('ayuda-' + campo);
+      if (!ayuda) return;
+      var valor = parseFloat(input.value);
+      if (!valor) { ayuda.innerText = ''; return; }
+      var r = RANGOS[campo];
+      ayuda.innerText = r.msg;
+      var color = colorValor(campo, valor);
+      ayuda.className = 'text-muted';
+      if (color === 'valor
