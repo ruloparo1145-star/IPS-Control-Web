@@ -31,7 +31,6 @@
 
   <div class="container-fluid px-4">
 
-    <!-- TABS -->
     <ul class="nav nav-tabs mb-3" id="tabsMedicas" role="tablist">
       <li class="nav-item" role="presentation">
         <button class="nav-link active" id="tab-consultas-btn" data-bs-toggle="tab" data-bs-target="#tab-consultas" type="button" onclick="cambiarTab('consulta')">
@@ -52,7 +51,6 @@
 
     <div class="tab-content">
 
-      <!-- PESTANA CONSULTAS -->
       <div class="tab-pane fade show active" id="tab-consultas">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5>Consultas Medicas</h5>
@@ -84,7 +82,6 @@
         </div>
       </div>
 
-      <!-- PESTANA ANALISIS -->
       <div class="tab-pane fade" id="tab-analisis">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5>Analisis de Sangre y Estudios</h5>
@@ -124,7 +121,6 @@
         </div>
       </div>
 
-      <!-- PESTANA OTRAS -->
       <div class="tab-pane fade" id="tab-otras">
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5>Otras Consultas (Dentista, Oftalmologo, etc.)</h5>
@@ -159,7 +155,6 @@
     </div>
   </div>
 
-  <!-- MODAL PARA CONSULTAS -->
   <div class="modal fade" id="modal-consulta" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -207,7 +202,6 @@
     </div>
   </div>
 
-  <!-- MODAL PARA ANALISIS -->
   <div class="modal fade" id="modal-analisis" tabindex="-1">
     <div class="modal-dialog modal-xl">
       <div class="modal-content">
@@ -325,7 +319,6 @@
     </div>
   </div>
 
-  <!-- MODAL PARA OTRAS -->
   <div class="modal fade" id="modal-otras" tabindex="-1">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
@@ -390,7 +383,6 @@
     var tabActual = 'consulta';
     var modalConsulta, modalAnalisis, modalOtras;
 
-    // Rangos de valores normales
     var RANGOS = {
       colesterol: { min: 0, max: 200, alerta: 240, msg: 'Optimo: menos de 200' },
       hdl: { min: 60, max: 999, alertaInverso: true, msg: 'Optimo: mas de 60' },
@@ -435,35 +427,20 @@
     }
 
     async function cargarAnalisis() {
-      var resultPadres = await window.db
-        .from('visitas_medicas')
-        .select('*')
-        .eq('tipo', 'analisis')
-        .order('fecha', { ascending: false });
-      
-      if (resultPadres.error) { 
-        console.error('Error padres:', resultPadres.error); 
-        return; 
-      }
+      var resultPadres = await window.db.from('visitas_medicas').select('*').eq('tipo', 'analisis').order('fecha', { ascending: false });
+      if (resultPadres.error) { console.error('Error padres:', resultPadres.error); return; }
       
       var padres = resultPadres.data || [];
       
       var resultValores = await window.db.from('analisis_valores').select('*');
-      
-      if (resultValores.error) { 
-        console.error('Error valores:', resultValores.error); 
-        return; 
-      }
+      if (resultValores.error) { console.error('Error valores:', resultValores.error); return; }
       
       var valores = resultValores.data || [];
       
-      todosLosDatos.analisis = padres.map(vm => {
+      todosLosDatos.analisis = padres.map(function(vm) {
         var valor = null;
         for (var i = 0; i < valores.length; i++) {
-          if (valores[i].analisis_id === vm.id) {
-            valor = valores[i];
-            break;
-          }
+          if (valores[i].analisis_id === vm.id) { valor = valores[i]; break; }
         }
         valor = valor || {};
         return {
@@ -506,7 +483,7 @@
         return;
       }
       var html = '';
-      todosLosDatos.consulta.forEach(c => {
+      todosLosDatos.consulta.forEach(function(c) {
         html += '<tr>';
         html += '<td>' + (c.fecha || '-') + '</td>';
         html += '<td>' + (c.medico || '-') + '</td>';
@@ -529,7 +506,7 @@
         return;
       }
       var html = '';
-      todosLosDatos.analisis.forEach(c => {
+      todosLosDatos.analisis.forEach(function(c) {
         html += '<tr>';
         html += '<td>' + (c.fecha || '-') + '</td>';
         html += '<td>' + (c.edad || '-') + '</td>';
@@ -560,7 +537,7 @@
         return;
       }
       var html = '';
-      todosLosDatos.otras.forEach(c => {
+      todosLosDatos.otras.forEach(function(c) {
         html += '<tr>';
         html += '<td>' + (c.fecha || '-') + '</td>';
         html += '<td>' + (c.especialidad || '-') + '</td>';
@@ -593,7 +570,6 @@
       tabActual = tipo;
     }
 
-    // ===== EXPORTAR CSV =====
     function exportarCSV(tipo) {
       var lista = todosLosDatos[tipo];
       if (!lista || lista.length === 0) {
@@ -606,53 +582,30 @@
 
       if (tipo === 'consulta') {
         headers = ['fecha', 'medico', 'especialidad', 'titulo', 'observaciones', 'archivo'];
-        lista.forEach(c => {
-          filas.push([
-            c.fecha || '',
-            c.medico || '',
-            c.especialidad || '',
-            c.titulo || '',
-            c.observaciones || '',
-            c.archivo_nombre || ''
-          ]);
+        lista.forEach(function(c) {
+          filas.push([c.fecha || '', c.medico || '', c.especialidad || '', c.titulo || '', c.observaciones || '', c.archivo_nombre || '']);
         });
       } else if (tipo === 'analisis') {
         headers = ['fecha', 'edad', 'pais', 'colesterol', 'hdl', 'ldl', 'trigliceridos', 'creatinina', 'glucosa', 'sodio', 'potasio', 'psa', 'b12', 'magnesio', 'archivo'];
-        lista.forEach(c => {
+        lista.forEach(function(c) {
           filas.push([
-            c.fecha || '',
-            c.edad || '',
-            c.pais || '',
-            c.colesterol_total || '',
-            c.hdl_bueno || '',
-            c.ldl_malo || '',
-            c.trigliceridos || '',
-            c.creatinina || '',
-            c.glucosa || '',
-            c.sodio || '',
-            c.potasio || '',
-            c.psa || '',
-            c.b12 || '',
-            c.magnesio || '',
-            c.archivo_nombre || ''
+            c.fecha || '', c.edad || '', c.pais || '',
+            c.colesterol_total || '', c.hdl_bueno || '', c.ldl_malo || '',
+            c.trigliceridos || '', c.creatinina || '', c.glucosa || '',
+            c.sodio || '', c.potasio || '', c.psa || '',
+            c.b12 || '', c.magnesio || '', c.archivo_nombre || ''
           ]);
         });
       } else if (tipo === 'otras') {
         headers = ['fecha', 'tipo', 'profesional', 'observaciones', 'archivo'];
-        lista.forEach(c => {
-          filas.push([
-            c.fecha || '',
-            c.especialidad || '',
-            c.medico || '',
-            c.observaciones || '',
-            c.archivo_nombre || ''
-          ]);
+        lista.forEach(function(c) {
+          filas.push([c.fecha || '', c.especialidad || '', c.medico || '', c.observaciones || '', c.archivo_nombre || '']);
         });
       }
 
       var csv = headers.join(',') + '\n';
-      filas.forEach(fila => {
-        var filaEscapada = fila.map(v => {
+      filas.forEach(function(fila) {
+        var filaEscapada = fila.map(function(v) {
           var valor = String(v);
           if (valor.indexOf(',') !== -1 || valor.indexOf('"') !== -1 || valor.indexOf('\n') !== -1) {
             return '"' + valor.replace(/"/g, '""') + '"';
@@ -676,7 +629,6 @@
       URL.revokeObjectURL(url);
     }
 
-    // ===== MODALES =====
     function abrirModal(tipo) {
       if (tipo === 'consulta') {
         document.getElementById('consulta-id').value = '';
@@ -802,7 +754,7 @@
 
         datos.user_id = session.user.id;
 
-        // Subir archivos
+        // Subir archivos si hay
         var inputArchivo = document.getElementById(tipo + '-archivo');
         if (inputArchivo && inputArchivo.files.length > 0) {
           var archivosSubidos = [];
@@ -817,86 +769,54 @@
           }
           if (archivosSubidos.length > 0) {
             datos.archivo_url = archivosSubidos[0].path;
-            datos.archivo_nombre = archivosSubidos.map(a => a.nombre).join(', ');
+            datos.archivo_nombre = archivosSubidos.map(function(a) { return a.nombre; }).join(', ');
           }
         }
 
-        // Insertar o actualizar
-        var idExistente = document.getElementById(tipo === 'consulta' ? 'consulta-id' : (tipo === 'analisis' ? 'analisis-id' : 'otras-id')).value;
+        // Separar datos: los de visita_medica y los de analisis_valores
+        var camposAnalisis = ['colesterol_total', 'hdl_bueno', 'ldl_malo', 'trigliceridos', 'creatinina', 'glucosa', 'sodio', 'potasio', 'b12', 'magnesio_valor', 'vitamina_d', 'psa', 'edad'];
         
-        if (idExistente) {
-          // Actualizar en visitas_medicas
-          var datosVisita = {};
-          for (var k in datos) {
-            if (k !== 'colesterol_total' && k !== 'hdl_bueno' && k !== 'ldl_malo' && k !== 'trigliceridos' && k !== 'creatinina' && k !== 'glucosa' && k !== 'sodio' && k !== 'potasio' && k !== 'b12' && k !== 'magnesio_valor' && k !== 'vitamina_d' && k !== 'psa' && k !== 'edad') {
-              datosVisita[k] = datos[k];
-            }
+        var datosVisita = {};
+        var datosValores = {};
+        for (var k in datos) {
+          if (camposAnalisis.indexOf(k) !== -1) {
+            datosValores[k] = datos[k];
+          } else {
+            datosVisita[k] = datos[k];
           }
-          var result = await window.db.from('visitas_medicas').update(datosVisita).eq('id', idExistente);
-          if (result.error) throw result.error;
+        }
 
-          // Si es analisis, actualizar valores
+        var idExistente = document.getElementById(tipo === 'consulta' ? 'consulta-id' : (tipo === 'analisis' ? 'analisis-id' : 'otras-id')).value;
+
+        if (idExistente) {
+          // ACTUALIZAR
+          var resultUpd = await window.db.from('visitas_medicas').update(datosVisita).eq('id', idExistente);
+          if (resultUpd.error) throw resultUpd.error;
+
           if (tipo === 'analisis') {
-            var datosValores = {
-              edad: datos.edad,
-              pais: datos.pais,
-              colesterol_total: datos.colesterol_total,
-              hdl_bueno: datos.hdl_bueno,
-              ldl_malo: datos.ldl_malo,
-              trigliceridos: datos.trigliceridos,
-              creatinina: datos.creatinina,
-              glucosa: datos.glucosa,
-              sodio: datos.sodio,
-              potasio: datos.potasio,
-              b12: datos.b12,
-              magnesio_valor: datos.magnesio_valor,
-              vitamina_d: datos.vitamina_d,
-              psa: datos.psa
-            };
-            var checkValores = await window.db.from('analisis_valores').select('id').eq('analisis_id', idExistente).limit(1);
-            if (checkValores.data && checkValores.data.length > 0) {
+            datosValores.fecha = datos.fecha;
+            datosValores.pais = datos.pais;
+            var checkVal = await window.db.from('analisis_valores').select('id').eq('analisis_id', idExistente).limit(1);
+            if (checkVal.data && checkVal.data.length > 0) {
               await window.db.from('analisis_valores').update(datosValores).eq('analisis_id', idExistente);
             } else {
               datosValores.analisis_id = idExistente;
               datosValores.user_id = session.user.id;
-              datosValores.fecha = datos.fecha;
               await window.db.from('analisis_valores').insert([datosValores]);
             }
           }
         } else {
-          // Insertar nuevo
-          var datosVisita = {};
-          for (var k2 in datos) {
-            if (k2 !== 'colesterol_total' && k2 !== 'hdl_bueno' && k2 !== 'ldl_malo' && k2 !== 'trigliceridos' && k2 !== 'creatinina' && k2 !== 'glucosa' && k2 !== 'sodio' && k2 !== 'potasio' && k2 !== 'b12' && k2 !== 'magnesio_valor' && k2 !== 'vitamina_d' && k2 !== 'psa' && k2 !== 'edad') {
-              datosVisita[k2] = datos[k2];
-            }
-          }
-          var result2 = await window.db.from('visitas_medicas').insert([datosVisita]).select();
-          if (result2.error) throw result2.error;
+          // INSERTAR NUEVO
+          var resultIns = await window.db.from('visitas_medicas').insert([datosVisita]).select();
+          if (resultIns.error) throw resultIns.error;
 
-          // Si es analisis, insertar valores
           if (tipo === 'analisis') {
-            var idNuevo = result2.data[0].id;
-            var datosValores2 = {
-              user_id: session.user.id,
-              analisis_id: idNuevo,
-              fecha: datos.fecha,
-              edad: datos.edad,
-              pais: datos.pais,
-              colesterol_total: datos.colesterol_total,
-              hdl_bueno: datos.hdl_bueno,
-              ldl_malo: datos.ldl_malo,
-              trigliceridos: datos.trigliceridos,
-              creatinina: datos.creatinina,
-              glucosa: datos.glucosa,
-              sodio: datos.sodio,
-              potasio: datos.potasio,
-              b12: datos.b12,
-              magnesio_valor: datos.magnesio_valor,
-              vitamina_d: datos.vitamina_d,
-              psa: datos.psa
-            };
-            await window.db.from('analisis_valores').insert([datosValores2]);
+            var idNuevo = resultIns.data[0].id;
+            datosValores.user_id = session.user.id;
+            datosValores.analisis_id = idNuevo;
+            datosValores.fecha = datos.fecha;
+            datosValores.pais = datos.pais;
+            await window.db.from('analisis_valores').insert([datosValores]);
           }
         }
 
@@ -908,12 +828,12 @@
 
       } catch (error) {
         errorDiv.innerText = 'Error: ' + error.message;
-     // }
-    // }
+      }
+    }
 
     function editarRegistro(tipo, id) {
       var lista = todosLosDatos[tipo];
-      var item = lista.find(x => x.id === id);
+      var item = lista.find(function(x) { return x.id === id; });
       if (!item) return;
 
       if (tipo === 'consulta') {
