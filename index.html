@@ -267,23 +267,42 @@
       const diasSinBackup = Math.floor((new Date() - new Date(ultimoBackup)) / (1000 * 60 * 60 * 24));
       if (diasSinBackup >= 365) { aviso.classList.remove('d-none'); }
     }
-
-    async function backupRapido() {
+    
+        async function backupRapido() {
       const btn = event.target;
       const textoOriginal = btn.innerText;
       btn.innerText = 'Preparando...';
       btn.disabled = true;
       try {
-        const { data, error } = await window.db.from('cobros').select('*').order('recibo_vision_fecha', { ascending: false });
-        if (error) throw error;
+        // 1. Descargar cobros
+        const cobros = await window.db.from('cobros').select('*').order('recibo_vision_fecha', { ascending: false });
+        if (cobros.error) throw cobros.error;
+
+        // 2. Descargar visitas medicas
+        const visitas = await window.db.from('visitas_medicas').select('*').order('fecha', { ascending: false });
+        if (visitas.error) throw visitas.error;
+
+        // 3. Descargar valores de analisis
+        const valores = await window.db.from('analisis_valores').select('*').order('fecha', { ascending: false });
+        if (valores.error) throw valores.error;
+
+        // 4. Armar el backup completo
         const backup = {
           app: 'IPS Control',
-          version: '1.0',
+          version: '2.0',
           fecha_backup: new Date().toISOString(),
           email_usuario: document.getElementById('user-email').innerText,
-          total_registros: data.length,
-          registros: data
+          resumen: {
+            total_cobros: cobros.data.length,
+            total_visitas: visitas.data.length,
+            total_valores_analisis: valores.data.length
+          },
+          cobros: cobros.data,
+          visitas_medicas: visitas.data,
+          analisis_valores: valores.data
         };
+
+        // 5. Descargar el archivo
         const json = JSON.stringify(backup, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -294,9 +313,12 @@
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        
+        // 6. Guardar fecha del ultimo backup
         localStorage.setItem('ips_ultimo_backup', new Date().toISOString());
         const aviso = document.getElementById('aviso-backup');
         if (aviso) aviso.classList.add('d-none');
+        
         btn.innerText = 'Backup descargado';
         setTimeout(function() { btn.innerText = textoOriginal; btn.disabled = false; }, 2000);
       } catch (error) {
@@ -305,7 +327,7 @@
         btn.disabled = false;
       }
     }
-
+    
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
         navigator.serviceWorker.register('sw.js').then(function(reg) { console.log('SW registrado'); }).catch(function(err) { console.log('Error SW:', err); });
