@@ -516,7 +516,7 @@
       tbody.innerHTML = html;
     }
 
-      function renderizarAnalisis() {
+         function renderizarAnalisis() {
       var tbody = document.getElementById('tabla-analisis');
       if (todosLosDatos.analisis.length === 0) {
         tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted">No hay analisis registrados.</td></tr>';
@@ -537,7 +537,14 @@
         html += '<td class="' + colorValor('sodio', c.sodio) + '">' + (c.sodio || '-') + '</td>';
         html += '<td class="' + colorValor('potasio', c.potasio) + '">' + (c.potasio || '-') + '</td>';
         html += '<td class="' + colorValor('psa', c.psa) + '">' + (c.psa || '-') + '</td>';
-        html += '<td class="text-center"><small>' + (c.archivo_nombre ? 'ðŸ“Ž' : '-') + '</small></td>';
+        
+        // Columna de archivos - AHORA CON BOTON VER
+        if (c.archivo_url) {
+          html += '<td class="text-center"><button class="btn btn-sm btn-outline-info" onclick="verArchivo(\'' + c.archivo_url + '\')">Ver</button></td>';
+        } else {
+          html += '<td class="text-center">-</td>';
+        }
+        
         html += '<td class="text-center">';
         html += '<button class="btn btn-sm btn-outline-primary me-1" onclick="editarRegistro(\'analisis\',' + c.id + ')">E</button>';
         html += '<button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(' + c.id + ')">X</button>';
@@ -545,8 +552,8 @@
         html += '</tr>';
       });
       tbody.innerHTML = html;
-    }
-    
+    }   
+        
     function renderizarOtras() {
       var tbody = document.getElementById('tabla-otras');
       if (todosLosDatos.otras.length === 0) {
