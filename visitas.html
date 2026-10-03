@@ -862,6 +862,91 @@ if (c.archivo_url) {
       if (result.error) { alert('Error: ' + result.error.message); return; }
       await cargarTodo();
     }
+
+    // ===== EXPORTAR A CSV =====
+    function exportarCSV(tipo) {
+      var lista = todosLosDatos[tipo];
+      if (!lista || lista.length === 0) {
+        alert('No hay datos para exportar.');
+        return;
+      }
+
+      var headers = [];
+      var filas = [];
+
+      if (tipo === 'consulta') {
+        headers = ['fecha', 'medico', 'especialidad', 'titulo', 'observaciones', 'archivo'];
+        lista.forEach(c => {
+          filas.push([
+            c.fecha || '',
+            c.medico || '',
+            c.especialidad || '',
+            c.titulo || '',
+            c.observaciones || '',
+            c.archivo_nombre || ''
+          ]);
+        });
+      } else if (tipo === 'analisis') {
+        headers = ['fecha', 'edad', 'pais', 'colesterol', 'hdl', 'ldl', 'trigliceridos', 'creatinina', 'glucosa', 'sodio', 'potasio', 'psa', 'archivo'];
+        lista.forEach(c => {
+          filas.push([
+            c.fecha || '',
+            c.edad || '',
+            c.pais || '',
+            c.colesterol_total || '',
+            c.hdl_bueno || '',
+            c.ldl_malo || '',
+            c.trigliceridos || '',
+            c.creatinina || '',
+            c.glucosa || '',
+            c.sodio || '',
+            c.potasio || '',
+            c.psa || '',
+            c.archivo_nombre || ''
+          ]);
+        });
+      } else if (tipo === 'otras') {
+        headers = ['fecha', 'tipo', 'profesional', 'observaciones', 'archivo'];
+        lista.forEach(c => {
+          filas.push([
+            c.fecha || '',
+            c.especialidad || '',
+            c.medico || '',
+            c.observaciones || '',
+            c.archivo_nombre || ''
+          ]);
+        });
+      }
+
+      // Armar el CSV
+      var csv = headers.join(',') + '\n';
+      filas.forEach(fila => {
+        var filaEscapada = fila.map(v => {
+          var valor = String(v);
+          if (valor.indexOf(',') !== -1 || valor.indexOf('"') !== -1 || valor.indexOf('\n') !== -1) {
+            return '"' + valor.replace(/"/g, '""') + '"';
+          }
+          return valor;
+        });
+        csv += filaEscapada.join(',') + '\n';
+      });
+
+      // Descargar
+      var fecha = new Date().toISOString().slice(0, 10);
+      var nombre = 'IPS_' + tipo.charAt(0).toUpperCase() + tipo.slice(1) + '_' + fecha + '.csv';
+      
+      // Agregar BOM para que Excel abra bien los acentos
+      var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = nombre;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    
   </script>
 </body>
 </html>
