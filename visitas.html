@@ -819,6 +819,28 @@ if (c.archivo_url) {
       }
     }
 
+    // ===== VER ARCHIVOS ADJUNTOS =====
+    async function verArchivo(path) {
+      if (!path) return;
+      try {
+        // Pedir a Supabase una URL firmada (valida 60 minutos)
+        var result = await window.db.storage
+          .from('analisis-medicos')
+          .createSignedUrl(path, 3600);
+        
+        if (result.error) {
+          alert('Error al obtener el archivo: ' + result.error.message);
+          return;
+        }
+        
+        // Abrir en nueva pestaÃ±a
+        window.open(result.data.signedUrl, '_blank');
+        
+      } catch (error) {
+        alert('Error: ' + error.message);
+      }
+    }
+    
     async function eliminarRegistro(id) {
       if (!confirm('Eliminar este registro?')) return;
       var result = await window.db.from('visitas_medicas').delete().eq('id', id);
