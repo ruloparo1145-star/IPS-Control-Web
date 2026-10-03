@@ -73,25 +73,51 @@
               </div>
             </div>
 
+         
+
             <div class="card bg-light mb-3">
               <div class="card-body">
                 <label class="form-label"><strong>Cotizacion del <span id="label-moneda">Euro Oficial</span></strong></label>
-                <div class="row g-2 mb-2">
-                  <div class="col-12">
-                    <input type="number" step="0.01" id="cotizacion" class="form-control form-control-lg" required placeholder="Ingresa o trae la cotizacion">
+                
+                <!-- Cotizacion BCRA (referencia) -->
+                <div class="row mb-2">
+                  <div class="col-md-8">
+                    <label class="form-label small">Cotizacion BCRA (referencia)</label>
+                    <input type="number" step="0.01" id="cotizacion-bcra" class="form-control" placeholder="Traer del BCRA" oninput="recalcularConDescuento()">
                   </div>
-                </div>
-                <div class="row g-2">
-                  <div class="col-md-12">
+                  <div class="col-md-4 d-flex align-items-end">
                     <button type="button" class="btn btn-outline-primary w-100" onclick="traerCotizacion()">
-                      Traer Cotizacion Oficial
+                      Traer BCRA
                     </button>
                   </div>
                 </div>
+
+                <!-- Descuento del banco -->
+                <div class="row mb-2">
+                  <div class="col-md-8">
+                    <label class="form-label small">Descuento del Banco (%)</label>
+                    <input type="number" step="0.01" id="descuento-banco" class="form-control" value="1.31" oninput="recalcularConDescuento()">
+                  </div>
+                  <div class="col-md-4 d-flex align-items-end">
+                    <small class="text-muted">Predeterminado: 1.31%</small>
+                  </div>
+                </div>
+
+                <!-- Cotizacion final (editable) -->
+                <div class="row mb-2">
+                  <div class="col-12">
+                    <label class="form-label small"><strong>Cotizacion Final (editable)</strong></label>
+                    <input type="number" step="0.01" id="cotizacion" class="form-control form-control-lg" required placeholder="Se calcula automaticamente">
+                  </div>
+                </div>
+
                 <div id="info-cotizacion" class="mt-2"></div>
               </div>
             </div>
 
+
+
+            
             <div class="card bg-light mb-3">
               <div class="card-body">
                 <h6 class="text-muted mb-3">Comisiones Fijas (en <span id="label-moneda-com">Euros</span>)</h6>
