@@ -53,7 +53,7 @@
       </div>
     </div>
   </nav>
-
+  
   <div class="container mb-3">
     <div class="row g-2">
       <div class="col-md-3">
@@ -71,14 +71,19 @@
     </div>
     <div class="row g-2 mt-2">
       <div class="col-md-6">
-        <button class="btn btn-backup btn-lg w-100" onclick="backupRapido()">Descargar Backup (JSON)</button>
+        <a href="visitas.html" class="btn btn-panel-destacado btn-lg w-100 shadow-sm">Visitas Medicas</a>
       </div>
       <div class="col-md-6">
         <a href="manual.html" class="btn btn-manual btn-lg w-100">Manual de Usuario</a>
       </div>
     </div>
+    <div class="row g-2 mt-2">
+      <div class="col-md-12">
+        <button class="btn btn-backup btn-lg w-100" onclick="backupRapido()">Descargar Backup (JSON)</button>
+      </div>
+    </div>
   </div>
-
+  
   <div class="container">
     <div id="aviso-backup" class="alert alert-warning d-none" role="alert">
       <strong>Recordatorio:</strong> Hace mas de 1 año que no haces un backup de tus datos. 
