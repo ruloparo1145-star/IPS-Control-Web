@@ -885,9 +885,9 @@ if (c.archivo_url) {
             c.observaciones || '',
             c.archivo_nombre || ''
           ]);
-        });
+        });     
       } else if (tipo === 'analisis') {
-        headers = ['fecha', 'edad', 'pais', 'colesterol', 'hdl', 'ldl', 'trigliceridos', 'creatinina', 'glucosa', 'sodio', 'potasio', 'psa', 'archivo'];
+        headers = ['fecha', 'edad', 'pais', 'colesterol', 'hdl', 'ldl', 'trigliceridos', 'creatinina', 'glucosa', 'sodio', 'potasio', 'psa', 'b12', 'magnesio', 'archivo'];
         lista.forEach(c => {
           filas.push([
             c.fecha || '',
@@ -902,9 +902,12 @@ if (c.archivo_url) {
             c.sodio || '',
             c.potasio || '',
             c.psa || '',
+            c.b12 || '',
+            c.magnesio || '',
             c.archivo_nombre || ''
           ]);
         });
+      } 
       } else if (tipo === 'otras') {
         headers = ['fecha', 'tipo', 'profesional', 'observaciones', 'archivo'];
         lista.forEach(c => {
