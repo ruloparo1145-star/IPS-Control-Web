@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IPS Control - Restaurar Backup</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #E8F4F5 !important; }
+    .bg-ips { background-color: #50B9C0 !important; }
+    .btn-ips { background-color: #50B9C0; border-color: #50B9C0; color: white; }
+    .btn-ips:hover { background-color: #3da8af; border-color: #3da8af; color: white; }
+    .card { background-color: #ffffff; }
+    .log-box {
+      background: #1e1e1e;
+      color: #00ff00;
+      font-family: monospace;
+      font-size: 0.8rem;
+      padding: 15px;
+      border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar navbar-dark bg-ips mb-4">
+    <div class="container">
+      <a href="index.html" class="navbar-brand mb-0 h1 text-white text-decoration-none">Volver al Panel</a>
+      <span class="text-white">Restaurar Backup</span>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-8">
+
+        <!-- AVISO IMPORTANTE -->
+        <div class="alert alert-danger" role="alert">
+          <strong>⚠️ ATENCION:</strong> Esta operacion va a <strong>agregar</strong> los datos del backup a la base actual.
+          No reemplaza los datos existentes. Si restauras el mismo backup dos veces, vas a duplicar los registros.
+        </div>
+
+        <!-- PASO 1: SELECCIONAR ARCHIVO -->
+        <div class="card shadow-sm mb-3">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">Paso 1: Seleccionar archivo de backup</h5>
+          </div>
+          <div class="card-body">
+            <input type="file" id="archivo-backup" class="form-control" accept=".json">
+            <div class="mt-3">
+              <button class="btn btn-ips" onclick="analizarBackup()">Analizar Backup</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- PASO 2: CONFIRMAR -->
+        <div id="paso-confirmar" class="card shadow-sm mb-3" style="display:none;">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">Paso 2: Confirmar restauracion</h5>
+          </div>
+          <div class="card-body">
+            <h6>Resumen del backup:</h6>
+            <ul id="resumen-backup"></ul>
+            <div class="form-check mb-3">
+              <input class="form-check-input" type="checkbox" id="confirmar-restaurar">
+              <label class="form-check-label" for="confirmar-restaurar">
+                Entiendo que esto va a agregar los datos a la base actual
+              </label>
+            </div>
+            <button class="btn btn-danger" onclick="restaurarBackup()" id="btn-restaurar" disabled>
+              Restaurar Ahora
+            </button>
+          </div>
+        </div>
+
+        <!-- PASO 3: LOG DE PROGRESO -->
+        <div id="paso-log" class="card shadow-sm mb-3" style="display:none;">
+          <div class="card-header bg-white">
+            <h5 class="mb-0">Progreso</h5>
+          </div>
+          <div class="card-body">
+            <div id="log-output" class="log-box">Esperando...</div>
+            <div id="resultado-final" class="mt-3"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+
+  <script>
+    var backupActual = null;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      var intentos = 0;
+      while (typeof window.db === 'undefined') {
+        await new Promise(r => setTimeout(r, 200));
+        intentos++;
+        if (intentos > 20) {
+          alert('Error: No se pudo conectar con Supabase.');
+          return;
+        }
+      }
+      var session = await verificarSesion();
+      if (!session) window.location.href = 'login.html';
+
+      document.getElementById('confirmar-restaurar').addEventListener('change', function(e) {
+        document.getElementById('btn-restaurar').disabled = !e.target.checked;
+      });
+    });
+
+    function log(msg) {
+      var output = document.getElementById('log-output');
+      var hora = new Date().toLocaleTimeString();
+      output.innerHTML += '\n[' + hora + '] ' + msg;
+      output.scrollTop = output.scrollHeight;
+      console.log(msg);
+    }
+
+    async function analizarBackup() {
+      var input = document.getElementById('archivo-backup');
+      if (!input.files || input.files.length === 0) {
+        alert('Selecciona un archivo primero.');
+        return;
+      }
+
+      try {
+        var texto = await input.files[0].text();
+        backupActual = JSON.parse(texto);
+
+        // Verificar que sea un backup valido
+        if (!backupActual.cobros && !backupActual.visitas_medicas) {
+          alert('El archivo no parece ser un backup valido de IPS Control.');
+          backupActual = null;
+          return;
+        }
+
+        var resumen = '<li><strong>App:</strong> ' + (backupActual.app || 'IPS Control') + '</li>';
+        resumen += '<li><strong>Version:</strong> ' + (backupActual.version || '1.0') + '</li>';
+        resumen += '<li><strong>Fecha del backup:</strong> ' + (backupActual.fecha_backup || '-') + '</li>';
+        resumen += '<li><strong>Cobros:</strong> ' + (backupActual.cobros ? backupActual.cobros.length : 0) + '</li>';
+        resumen += '<li><strong>Visitas medicas:</strong> ' + (backupActual.visitas_medicas ? backupActual.visitas_medicas.length : 0) + '</li>';
+        resumen += '<li><strong>Valores de analisis:</strong> ' + (backupActual.analisis_valores ? backupActual.analisis_valores.length : 0) + '</li>';
+
+        document.getElementById('resumen-backup').innerHTML = resumen;
+        document.getElementById('paso-confirmar').style.display = 'block';
+
+      } catch (e) {
+        alert('Error al leer el archivo: ' + e.message);
+      }
+    }
+
+    async function restaurarBackup() {
+      if (!backupActual) return;
+
+      document.getElementById('paso-log').style.display = 'block';
+      document.getElementById('log-output').innerHTML = 'Iniciando restauracion...';
+      document.getElementById('resultado-final').innerHTML = '';
+
+      var session = await verificarSesion();
+      if (!session) {
+        log('ERROR: Sin sesion');
+        return;
+      }
+
+      var userId = session.user.id;
+      var mapaVisitas = {};  // id_viejo -> id_nuevo
+
+      try {
+        // ============================================
+        // PASO 1: Restaurar COBROS
+        // ============================================
+        if (backupActual.cobros && backupActual.cobros.length > 0) {
+          log('Restaurando ' + backupActual.cobros.length + ' cobros...');
+
+          // Eliminar id y user_id originales, poner el nuevo user_id
+          var cobrosLimpios = backupActual.cobros.map(function(c) {
+            var copia = Object.assign({}, c);
+            delete copia.id;
+            delete copia.created_at;
+            copia.user_id = userId;
+            return copia;
+          });
+
+          // Insertar en lotes de 50
+          var insertados = 0;
+          for (var i = 0; i < cobrosLimpios.length; i += 50) {
+            var lote = cobrosLimpios.slice(i, i + 50);
+            var result = await window.db.from('cobros').insert(lote);
+            if (result.error) {
+              log('ERROR cobros lote ' + i + ': ' + result.error.message);
+            } else {
+              insertados += lote.length;
+              log('Cobros insertados: ' + insertados + '/' + cobrosLimpios.length);
+            }
+          }
+          log('Cobros restaurados: ' + insertados);
+        }
+
+        // ============================================
+        // PASO 2: Restaurar VISITAS MEDICAS (una por una para mapear IDs)
+        // ============================================
+        if (backupActual.visitas_medicas && backupActual.visitas_medicas.length > 0) {
+          log('Restaurando ' + backupActual.visitas_medicas.length + ' visitas medicas...');
+          log('(esto puede tardar, se hace una por una para mapear IDs)');
+
+          var visitasInsertadas = 0;
+          for (var j = 0; j < backupActual.visitas_medicas.length; j++) {
+            var visita = backupActual.visitas_medicas[j];
+            var idViejo = visita.id;
+
+            var copia = Object.assign({}, visita);
+            delete copia.id;
+            delete copia.created_at;
+            copia.user_id = userId;
+
+            var result = await window.db.from('visitas_medicas').insert([copia]).select();
+            if (result.error) {
+              log('ERROR visita id_viejo=' + idViejo + ': ' + result.error.message);
+            } else {
+              var idNuevo = result.data[0].id;
+              mapaVisitas[idViejo] = idNuevo;
+              visitasInsertadas++;
+            }
+
+            // Log cada 5 visitas
+            if ((j + 1) % 5 === 0 || j === backupActual.visitas_medicas.length - 1) {
+              log('Visitas insertadas: ' + visitasInsertadas + '/' + backupActual.visitas_medicas.length);
+            }
+          }
+          log('Visitas medicas restauradas: ' + visitasInsertadas);
+          log('Mapa de IDs creado: ' + JSON.stringify(mapaVisitas));
+        }
+
+        // ============================================
+        // PASO 3: Restaurar ANALISIS_VALORES (con IDs mapeados)
+        // ============================================
+        if (backupActual.analisis_valores && backupActual.analisis_valores.length > 0) {
+          log('Restaurando ' + backupActual.analisis_valores.length + ' valores de analisis...');
+
+          var valoresInsertados = 0;
+          for (var k = 0; k < backupActual.analisis_valores.length; k++) {
+            var valor = backupActual.analisis_valores[k];
+            var analisisIdViejo = valor.analisis_id;
+            var analisisIdNuevo = mapaVisitas[analisisIdViejo];
+
+            if (!analisisIdNuevo) {
+              log('ADVERTENCIA: No se encontro mapeo para analisis_id viejo=' + analisisIdViejo);
+              continue;
+            }
+
+            var copia = Object.assign({}, valor);
+            delete copia.id;
+            delete copia.created_at;
+            copia.user_id = userId;
+            copia.analisis_id = analisisIdNuevo;  // Usar el ID nuevo
+
+            var result = await window.db.from('analisis_valores').insert([copia]);
+            if (result.error) {
+              log('ERROR valor id_analisis_viejo=' + analisisIdViejo + ': ' + result.error.message);
+            } else {
+              valoresInsertados++;
+            }
+          }
+          log('Valores de analisis restaurados: ' + valoresInsertados);
+        }
+
+        // ============================================
+        // FINALIZADO
+        // ============================================
+        log('==============');
+        log('RESTAURACION COMPLETA');
+        log('==============');
+
+        document.getElementById('resultado-final').innerHTML = 
+          '<div class="alert alert-success"><strong>Restauracion completada.</strong> Revisa los datos en la app.</div>';
+
+      } catch (error) {
+        log('ERROR GENERAL: ' + error.message);
+        document.getElementById('resultado-final').innerHTML = 
+          '<div class="alert alert-danger"><strong>Error:</strong> ' + error.message + '</div>';
+      }
+    }
+  </script>
+</body>
+</html>
