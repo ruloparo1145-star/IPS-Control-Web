@@ -17,6 +17,11 @@
     }
     #info-cotizacion { font-size: 0.85rem; }
     .moneda-btn { font-weight: 600; }
+    .campo-destacado {
+      border: 2px solid #50B9C0 !important;
+      background-color: #f0fbfc !important;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -41,21 +46,17 @@
               <div class="card-body">
                 <label class="form-label"><strong>Moneda de destino</strong></label>
                 <div class="row g-2">
-                  <div class="col-md-3">
+                  <div class="col-md-4">
                     <input type="radio" class="btn-check" name="moneda" id="mon_eur" value="EUR" checked onchange="cambiarMoneda()">
                     <label class="btn btn-outline-primary w-100 moneda-btn" for="mon_eur">EUR</label>
                   </div>
-                  <div class="col-md-3">
+                  <div class="col-md-4">
                     <input type="radio" class="btn-check" name="moneda" id="mon_usd" value="USD" onchange="cambiarMoneda()">
                     <label class="btn btn-outline-success w-100 moneda-btn" for="mon_usd">USD</label>
                   </div>
-                  <div class="col-md-3">
+                  <div class="col-md-4">
                     <input type="radio" class="btn-check" name="moneda" id="mon_brl" value="BRL" onchange="cambiarMoneda()">
                     <label class="btn btn-outline-warning w-100 moneda-btn" for="mon_brl">BRL</label>
-                  </div>
-                  <div class="col-md-3">
-                    <input type="radio" class="btn-check" name="moneda" id="mon_cny" value="CNY" onchange="cambiarMoneda()">
-                    <label class="btn btn-outline-danger w-100 moneda-btn" for="mon_cny">CNY</label>
                   </div>
                 </div>
                 <small class="text-muted d-block mt-2" id="moneda-ayuda">Euro - Union Europea</small>
@@ -73,13 +74,12 @@
               </div>
             </div>
 
-         
-
+            <!-- Bloque de cotizacion con BCRA + descuento -->
             <div class="card bg-light mb-3">
               <div class="card-body">
                 <label class="form-label"><strong>Cotizacion del <span id="label-moneda">Euro Oficial</span></strong></label>
-                
-                <!-- Cotizacion BCRA (referencia) -->
+
+                <!-- Cotizacion BCRA -->
                 <div class="row mb-2">
                   <div class="col-md-8">
                     <label class="form-label small">Cotizacion BCRA (referencia)</label>
@@ -99,15 +99,15 @@
                     <input type="number" step="0.01" id="descuento-banco" class="form-control" value="1.31" oninput="recalcularConDescuento()">
                   </div>
                   <div class="col-md-4 d-flex align-items-end">
-                    <small class="text-muted">Predeterminado: 1.31%</small>
+                    <small class="text-muted">Sugerido: 1.31%</small>
                   </div>
                 </div>
 
-                <!-- Cotizacion final (editable) -->
+                <!-- Cotizacion final editable -->
                 <div class="row mb-2">
                   <div class="col-12">
                     <label class="form-label small"><strong>Cotizacion Final (editable)</strong></label>
-                    <input type="number" step="0.01" id="cotizacion" class="form-control form-control-lg" required placeholder="Se calcula automaticamente">
+                    <input type="number" step="0.01" id="cotizacion" class="form-control form-control-lg campo-destacado" required placeholder="Se calcula automaticamente">
                   </div>
                 </div>
 
@@ -115,9 +115,7 @@
               </div>
             </div>
 
-
-
-            
+            <!-- Comisiones fijas -->
             <div class="card bg-light mb-3">
               <div class="card-body">
                 <h6 class="text-muted mb-3">Comisiones Fijas (en <span id="label-moneda-com">Euros</span>)</h6>
@@ -207,12 +205,10 @@
     var datosCalculados = null;
     var monedaActual = 'EUR';
 
-    // Configuracion por moneda
     var MONEDAS = {
       EUR: { nombre: 'Euro', plural: 'Euros', endpoint: 'eur', descripcion: 'Euro - Union Europea' },
       USD: { nombre: 'Dolar', plural: 'Dolares', endpoint: 'usd', descripcion: 'Dolar - Estados Unidos' },
-      BRL: { nombre: 'Real', plural: 'Reales', endpoint: 'brl', descripcion: 'Real - Brasil' },
-      CNY: { nombre: 'Yuan', plural: 'Yuanes', endpoint: 'cny', descripcion: 'Yuan - China' }
+      BRL: { nombre: 'Real', plural: 'Reales', endpoint: 'brl', descripcion: 'Real - Brasil' }
     };
 
     document.addEventListener('DOMContentLoaded', async function() {
@@ -229,8 +225,10 @@
 
       var comArg = localStorage.getItem('ips_comision_arg');
       var comIta = localStorage.getItem('ips_comision_ita');
+      var descBanco = localStorage.getItem('ips_descuento_banco');
       if (comArg) document.getElementById('comision_arg').value = comArg;
       if (comIta) document.getElementById('comision_ita').value = comIta;
+      if (descBanco) document.getElementById('descuento-banco').value = descBanco;
     });
 
     function cambiarMoneda() {
@@ -242,18 +240,19 @@
       document.getElementById('label-moneda-com').innerText = info.plural;
       document.getElementById('moneda-ayuda').innerText = info.descripcion;
 
-      // Limpiar cotizacion al cambiar de moneda
+      document.getElementById('cotizacion-bcra').value = '';
       document.getElementById('cotizacion').value = '';
       document.getElementById('info-cotizacion').innerHTML = '';
       document.getElementById('resultados').style.display = 'none';
     }
 
-    function guardarComisiones() {
+    function guardarConfig() {
       localStorage.setItem('ips_comision_arg', document.getElementById('comision_arg').value);
       localStorage.setItem('ips_comision_ita', document.getElementById('comision_ita').value);
+      localStorage.setItem('ips_descuento_banco', document.getElementById('descuento-banco').value);
     }
 
-    // ==== TRAER COTIZACION ====
+    // ===== TRAER COTIZACION BCRA =====
     async function traerCotizacion() {
       var btn = event.target;
       var textoOriginal = btn.innerText;
@@ -275,23 +274,17 @@
         if (!res.ok) throw new Error('El servidor respondio con error ' + res.status);
 
         var data = await res.json();
-        var valorBCRA = null;
+        var valorVenta = null;
         var dataObj = Array.isArray(data) ? data[0] : data;
 
         if (dataObj) {
-          if (dataObj.venta) valorBCRA = dataObj.venta;
-          else if (dataObj.compra) valorBCRA = dataObj.compra;
+          if (dataObj.venta) valorVenta = dataObj.venta;
+          else if (dataObj.compra) valorVenta = dataObj.compra;
         }
 
-        if (valorBCRA) {
-          // Aplicar el descuento del banco
-          var descuento = parseFloat(document.getElementById('descuento-banco').value) || 0;
-          var valorReal = valorBCRA * (1 - descuento / 100);
-
-          document.getElementById('cotizacion-bcra').value = valorBCRA;
-          document.getElementById('cotizacion').value = valorReal.toFixed(2);
-
-          info.innerHTML = '<span class="text-success">BCRA: $' + valorBCRA + ' | Banco (con -' + descuento + '%): $' + valorReal.toFixed(2) + '</span>';
+        if (valorVenta) {
+          document.getElementById('cotizacion-bcra').value = valorVenta;
+          recalcularConDescuento();
         } else {
           info.innerHTML = '<span class="text-danger">No se encontro el valor para ' + moneda.nombre + '. Ingresalo a mano.</span>';
         }
@@ -305,13 +298,16 @@
       btn.disabled = false;
     }
 
-    // Recalcular cuando el usuario cambia el descuento
+    // ===== RECALCULAR COTIZACION CON DESCUENTO =====
     function recalcularConDescuento() {
       var valorBCRA = parseFloat(document.getElementById('cotizacion-bcra').value);
       var descuento = parseFloat(document.getElementById('descuento-banco').value) || 0;
+      var info = document.getElementById('info-cotizacion');
+
       if (valorBCRA) {
         var valorReal = valorBCRA * (1 - descuento / 100);
         document.getElementById('cotizacion').value = valorReal.toFixed(2);
+        info.innerHTML = '<span class="text-success">BCRA: $' + valorBCRA.toFixed(2) + ' | Descuento: -' + descuento + '% | Final: $' + valorReal.toFixed(2) + '</span>';
       }
     }
 
@@ -327,7 +323,7 @@
         return;
       }
 
-      guardarComisiones();
+      guardarConfig();
 
       var bruto = pesos / cotizacion;
       var totalComisiones = usarComisiones ? (comArg + comIta) : 0;
@@ -370,7 +366,7 @@
         recibo_vision_fecha: document.getElementById('fecha_recibo').value,
         recibo_fecha_pago_arg: document.getElementById('fecha_recibo').value,
         monto_pesos: datosCalculados.pesos,
-        transferencia_fecha: document.getElementById('transferencia_fecha').value || null,
+        transferencia_fecha: document.getElementById('fecha_transferencia').value || null,
         monto_euros: netoReal,
         cotizacion_banco_euro: datosCalculados.cotizacion,
         cotizacion_calculada_euro: datosCalculados.cotizacion,
