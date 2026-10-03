@@ -603,4 +603,154 @@
       ayuda.innerText = r.msg;
       var color = colorValor(campo, valor);
       ayuda.className = 'text-muted';
-      if (color === 'valor
+      if (color === 'valor-ok') ayuda.className = 'valor-ok';
+      else if (color === 'valor-alerta') ayuda.className = 'valor-alerta';
+      else if (color === 'valor-peligro') ayuda.className = 'valor-peligro';
+    }
+
+    async function guardarRegistro(tipo) {
+      var session = await verificarSesion();
+      if (!session) return;
+
+      var errorDiv = document.getElementById(tipo + '-error');
+      errorDiv.innerText = '';
+
+      try {
+        var datos = {};
+        if (tipo === 'consulta') {
+          datos = {
+            tipo: 'consulta',
+            fecha: document.getElementById('consulta-fecha').value,
+            medico: document.getElementById('consulta-medico').value,
+            especialidad: document.getElementById('consulta-especialidad').value,
+            titulo: document.getElementById('consulta-titulo').value,
+            observaciones: document.getElementById('consulta-obs').value
+          };
+        } else if (tipo === 'analisis') {
+          datos = {
+            tipo: 'analisis',
+            fecha: document.getElementById('analisis-fecha').value,
+            edad: parseInt(document.getElementById('analisis-edad').value) || null,
+            pais: document.getElementById('analisis-pais').value,
+            titulo: document.getElementById('analisis-titulo').value,
+            colesterol_total: parseFloat(document.getElementById('analisis-colesterol').value) || null,
+            hdl_bueno: parseFloat(document.getElementById('analisis-hdl').value) || null,
+            ldl_malo: parseFloat(document.getElementById('analisis-ldl').value) || null,
+            trigliceridos: parseFloat(document.getElementById('analisis-trigliceridos').value) || null,
+            creatinina: parseFloat(document.getElementById('analisis-creatinina').value) || null,
+            glucosa: parseFloat(document.getElementById('analisis-glucosa').value) || null,
+            sodio: parseFloat(document.getElementById('analisis-sodio').value) || null,
+            potasio: parseFloat(document.getElementById('analisis-potasio').value) || null,
+            magnesio: parseFloat(document.getElementById('analisis-magnesio').value) || null,
+            vitamina_d: parseFloat(document.getElementById('analisis-vitamina').value) || null,
+            psa: parseFloat(document.getElementById('analisis-psa').value) || null,
+            observaciones: document.getElementById('analisis-obs').value
+          };
+        } else if (tipo === 'otras') {
+          datos = {
+            tipo: 'otras',
+            fecha: document.getElementById('otras-fecha').value,
+            especialidad: document.getElementById('otras-tipo').value,
+            medico: document.getElementById('otras-medico').value,
+            observaciones: document.getElementById('otras-obs').value
+          };
+        }
+
+        datos.user_id = session.user.id;
+
+        // Subir archivos
+        var inputArchivo = document.getElementById(tipo + '-archivo');
+        if (inputArchivo && inputArchivo.files.length > 0) {
+          var archivosSubidos = [];
+          for (var i = 0; i < inputArchivo.files.length; i++) {
+            var file = inputArchivo.files[i];
+            var nombre = Date.now() + '_' + file.name;
+            var path = session.user.id + '/' + nombre;
+            var upload = await window.db.storage.from('analisis-medicos').upload(path, file);
+            if (!upload.error) {
+              archivosSubidos.push({ nombre: file.name, path: path });
+            }
+          }
+          if (archivosSubidos.length > 0) {
+            datos.archivo_url = archivosSubidos[0].path;
+            datos.archivo_nombre = archivosSubidos.map(a => a.nombre).join(', ');
+          }
+        }
+
+        // Insertar o actualizar
+        var idExistente = document.getElementById(tipo === 'consulta' ? 'consulta-id' : (tipo === 'analisis' ? 'analisis-id' : 'otras-id')).value;
+        
+        if (idExistente) {
+          var result = await window.db.from('visitas_medicas').update(datos).eq('id', idExistente);
+          if (result.error) throw result.error;
+        } else {
+          var result = await window.db.from('visitas_medicas').insert([datos]);
+          if (result.error) throw result.error;
+        }
+
+        // Cerrar modal y recargar
+        if (tipo === 'consulta') modalConsulta.hide();
+        else if (tipo === 'analisis') modalAnalisis.hide();
+        else if (tipo === 'otras') modalOtras.hide();
+
+        await cargarTodo();
+
+      } catch (error) {
+        errorDiv.innerText = 'Error: ' + error.message;
+      }
+    }
+
+    function editarRegistro(tipo, id) {
+      var lista = todosLosDatos[tipo === 'consulta' ? 'consulta' : (tipo === 'analisis' ? 'analisis' : 'otras')];
+      var item = lista.find(x => x.id === id);
+      if (!item) return;
+
+      if (tipo === 'consulta') {
+        document.getElementById('consulta-id').value = item.id;
+        document.getElementById('consulta-fecha').value = item.fecha || '';
+        document.getElementById('consulta-medico').value = item.medico || '';
+        document.getElementById('consulta-especialidad').value = item.especialidad || '';
+        document.getElementById('consulta-titulo').value = item.titulo || '';
+        document.getElementById('consulta-obs').value = item.observaciones || '';
+        document.getElementById('modal-consulta-titulo').innerText = 'Editar Consulta';
+        modalConsulta.show();
+      } else if (tipo === 'analisis') {
+        document.getElementById('analisis-id').value = item.id;
+        document.getElementById('analisis-fecha').value = item.fecha || '';
+        document.getElementById('analisis-edad').value = item.edad || '';
+        document.getElementById('analisis-pais').value = item.pais || '';
+        document.getElementById('analisis-titulo').value = item.titulo || '';
+        document.getElementById('analisis-colesterol').value = item.colesterol_total || '';
+        document.getElementById('analisis-hdl').value = item.hdl_bueno || '';
+        document.getElementById('analisis-ldl').value = item.ldl_malo || '';
+        document.getElementById('analisis-trigliceridos').value = item.trigliceridos || '';
+        document.getElementById('analisis-creatinina').value = item.creatinina || '';
+        document.getElementById('analisis-glucosa').value = item.glucosa || '';
+        document.getElementById('analisis-sodio').value = item.sodio || '';
+        document.getElementById('analisis-potasio').value = item.potasio || '';
+        document.getElementById('analisis-magnesio').value = item.magnesio || '';
+        document.getElementById('analisis-vitamina').value = item.vitamina_d || '';
+        document.getElementById('analisis-psa').value = item.psa || '';
+        document.getElementById('analisis-obs').value = item.observaciones || '';
+        document.getElementById('modal-analisis-titulo').innerText = 'Editar Analisis';
+        modalAnalisis.show();
+      } else if (tipo === 'otras') {
+        document.getElementById('otras-id').value = item.id;
+        document.getElementById('otras-fecha').value = item.fecha || '';
+        document.getElementById('otras-tipo').value = item.especialidad || '';
+        document.getElementById('otras-medico').value = item.medico || '';
+        document.getElementById('otras-obs').value = item.observaciones || '';
+        document.getElementById('modal-otras-titulo').innerText = 'Editar Consulta';
+        modalOtras.show();
+      }
+    }
+
+    async function eliminarRegistro(id) {
+      if (!confirm('Eliminar este registro?')) return;
+      var result = await window.db.from('visitas_medicas').delete().eq('id', id);
+      if (result.error) { alert('Error: ' + result.error.message); return; }
+      await cargarTodo();
+    }
+  </script>
+</body>
+</html>
