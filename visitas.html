@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>IPS Control - Visitas Medicas</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-      <style>
+  <style>
     body { background-color: #E8F4F5 !important; }
     .bg-ips { background-color: #50B9C0 !important; }
     .btn-ips { background-color: #50B9C0; border-color: #50B9C0; color: white; }
@@ -21,7 +21,7 @@
   </style>
 </head>
 <body>
-  
+
   <nav class="navbar navbar-dark bg-ips mb-4">
     <div class="container">
       <a href="index.html" class="navbar-brand mb-0 h1 text-white text-decoration-none">Volver al Panel</a>
@@ -54,15 +54,13 @@
 
       <!-- PESTANA CONSULTAS -->
       <div class="tab-pane fade show active" id="tab-consultas">
-        
-<div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
           <h5>Consultas Medicas</h5>
           <div>
             <button class="btn btn-success me-2" onclick="exportarCSV('consulta')">Exportar CSV</button>
             <button class="btn btn-ips" onclick="abrirModal('consulta')">+ Nueva Consulta</button>
           </div>
         </div>
-        
         <div class="card shadow-sm">
           <div class="card-body p-0">
             <div class="table-responsive">
@@ -88,15 +86,13 @@
 
       <!-- PESTANA ANALISIS -->
       <div class="tab-pane fade" id="tab-analisis">
-
-<div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
           <h5>Analisis de Sangre y Estudios</h5>
           <div>
             <button class="btn btn-success me-2" onclick="exportarCSV('analisis')">Exportar CSV</button>
             <button class="btn btn-ips" onclick="abrirModal('analisis')">+ Nuevo Analisis</button>
           </div>
         </div>
-        
         <div class="card shadow-sm mb-3">
           <div class="card-body p-0">
             <div class="table-responsive">
@@ -130,15 +126,13 @@
 
       <!-- PESTANA OTRAS -->
       <div class="tab-pane fade" id="tab-otras">
-
-<div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
           <h5>Otras Consultas (Dentista, Oftalmologo, etc.)</h5>
           <div>
             <button class="btn btn-success me-2" onclick="exportarCSV('otras')">Exportar CSV</button>
             <button class="btn btn-ips" onclick="abrirModal('otras')">+ Nueva Consulta</button>
           </div>
         </div>
-        
         <div class="card shadow-sm">
           <div class="card-body p-0">
             <div class="table-responsive">
@@ -202,7 +196,6 @@
           <div class="mb-3">
             <label class="form-label">Archivos adjuntos</label>
             <input type="file" id="consulta-archivo" class="form-control" accept="image/*,application/pdf" multiple>
-            <div id="consulta-archivos-lista" class="mt-2"></div>
           </div>
           <div id="consulta-error" class="text-danger"></div>
         </div>
@@ -294,6 +287,10 @@
           <h6 class="text-muted mt-3 mb-2">Otros Valores</h6>
           <div class="row mb-3">
             <div class="col-md-3">
+              <label class="form-label">B12</label>
+              <input type="number" step="0.01" id="analisis-b12" class="form-control">
+            </div>
+            <div class="col-md-3">
               <label class="form-label">Magnesio</label>
               <input type="number" step="0.01" id="analisis-magnesio" class="form-control">
             </div>
@@ -316,7 +313,6 @@
           <div class="mb-3">
             <label class="form-label">Archivos adjuntos (fotos, PDF del analisis)</label>
             <input type="file" id="analisis-archivo" class="form-control" accept="image/*,application/pdf" multiple>
-            <div id="analisis-archivos-lista" class="mt-2"></div>
           </div>
 
           <div id="analisis-error" class="text-danger"></div>
@@ -372,7 +368,6 @@
           <div class="mb-3">
             <label class="form-label">Archivos adjuntos</label>
             <input type="file" id="otras-archivo" class="form-control" accept="image/*,application/pdf" multiple>
-            <div id="otras-archivos-lista" class="mt-2"></div>
           </div>
           <div id="otras-error" class="text-danger"></div>
         </div>
@@ -439,8 +434,7 @@
       renderizarConsultas();
     }
 
-          async function cargarAnalisis() {
-      // Paso 1: Traer los registros padre
+    async function cargarAnalisis() {
       var resultPadres = await window.db
         .from('visitas_medicas')
         .select('*')
@@ -454,10 +448,7 @@
       
       var padres = resultPadres.data || [];
       
-      // Paso 2: Traer TODOS los valores del usuario
-      var resultValores = await window.db
-        .from('analisis_valores')
-        .select('*');
+      var resultValores = await window.db.from('analisis_valores').select('*');
       
       if (resultValores.error) { 
         console.error('Error valores:', resultValores.error); 
@@ -466,7 +457,6 @@
       
       var valores = resultValores.data || [];
       
-      // Paso 3: Combinar manualmente por analisis_id
       todosLosDatos.analisis = padres.map(vm => {
         var valor = null;
         for (var i = 0; i < valores.length; i++) {
@@ -490,7 +480,8 @@
           sodio: valor.sodio,
           potasio: valor.potasio,
           psa: valor.psa,
-          magnesio: valor.magnesio,
+          b12: valor.b12,
+          magnesio: valor.magnesio_valor,
           vitamina_d: valor.vitamina_d,
           observaciones: vm.observaciones,
           archivo_nombre: vm.archivo_nombre,
@@ -521,14 +512,7 @@
         html += '<td>' + (c.medico || '-') + '</td>';
         html += '<td>' + (c.especialidad || '-') + '</td>';
         html += '<td><small>' + (c.observaciones || '') + '</small></td>';
-       // html += '<td class="text-center"><small>' + (c.archivo_nombre ? 'ðŸ“Ž' : '-') + '</small></td>';
-
-if (c.archivo_url) {
-          html += '<td class="text-center"><button class="btn btn-sm btn-outline-info" onclick="verArchivo(\'' + c.archivo_url + '\')">Ver</button></td>';
-        } else {
-          html += '<td class="text-center">-</td>';
-        }
-        
+        html += '<td class="text-center">' + (c.archivo_nombre ? 'Si' : '-') + '</td>';
         html += '<td class="text-center">';
         html += '<button class="btn btn-sm btn-outline-primary me-1" onclick="editarRegistro(\'consulta\',' + c.id + ')">E</button>';
         html += '<button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(' + c.id + ')">X</button>';
@@ -538,7 +522,7 @@ if (c.archivo_url) {
       tbody.innerHTML = html;
     }
 
-         function renderizarAnalisis() {
+    function renderizarAnalisis() {
       var tbody = document.getElementById('tabla-analisis');
       if (todosLosDatos.analisis.length === 0) {
         tbody.innerHTML = '<tr><td colspan="14" class="text-center text-muted">No hay analisis registrados.</td></tr>';
@@ -559,14 +543,7 @@ if (c.archivo_url) {
         html += '<td class="' + colorValor('sodio', c.sodio) + '">' + (c.sodio || '-') + '</td>';
         html += '<td class="' + colorValor('potasio', c.potasio) + '">' + (c.potasio || '-') + '</td>';
         html += '<td class="' + colorValor('psa', c.psa) + '">' + (c.psa || '-') + '</td>';
-        
-        // Columna de archivos - AHORA CON BOTON VER
-        if (c.archivo_url) {
-          html += '<td class="text-center"><button class="btn btn-sm btn-outline-info" onclick="verArchivo(\'' + c.archivo_url + '\')">Ver</button></td>';
-        } else {
-          html += '<td class="text-center">-</td>';
-        }
-        
+        html += '<td class="text-center">' + (c.archivo_nombre ? 'Si' : '-') + '</td>';
         html += '<td class="text-center">';
         html += '<button class="btn btn-sm btn-outline-primary me-1" onclick="editarRegistro(\'analisis\',' + c.id + ')">E</button>';
         html += '<button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(' + c.id + ')">X</button>';
@@ -574,8 +551,8 @@ if (c.archivo_url) {
         html += '</tr>';
       });
       tbody.innerHTML = html;
-    }   
-        
+    }
+
     function renderizarOtras() {
       var tbody = document.getElementById('tabla-otras');
       if (todosLosDatos.otras.length === 0) {
@@ -589,14 +566,7 @@ if (c.archivo_url) {
         html += '<td>' + (c.especialidad || '-') + '</td>';
         html += '<td>' + (c.medico || '-') + '</td>';
         html += '<td><small>' + (c.observaciones || '') + '</small></td>';
-       // html += '<td class="text-center"><small>' + (c.archivo_nombre ? 'ðŸ“Ž' : '-') + '</small></td>';
-
-        if (c.archivo_url) {
-          html += '<td class="text-center"><button class="btn btn-sm btn-outline-info" onclick="verArchivo(\'' + c.archivo_url + '\')">Ver</button></td>';
-        } else {
-          html += '<td class="text-center">-</td>';
-        }
-        
+        html += '<td class="text-center">' + (c.archivo_nombre ? 'Si' : '-') + '</td>';
         html += '<td class="text-center">';
         html += '<button class="btn btn-sm btn-outline-primary me-1" onclick="editarRegistro(\'otras\',' + c.id + ')">E</button>';
         html += '<button class="btn btn-sm btn-outline-danger" onclick="eliminarRegistro(' + c.id + ')">X</button>';
@@ -621,6 +591,89 @@ if (c.archivo_url) {
 
     function cambiarTab(tipo) {
       tabActual = tipo;
+    }
+
+    // ===== EXPORTAR CSV =====
+    function exportarCSV(tipo) {
+      var lista = todosLosDatos[tipo];
+      if (!lista || lista.length === 0) {
+        alert('No hay datos para exportar.');
+        return;
+      }
+
+      var headers = [];
+      var filas = [];
+
+      if (tipo === 'consulta') {
+        headers = ['fecha', 'medico', 'especialidad', 'titulo', 'observaciones', 'archivo'];
+        lista.forEach(c => {
+          filas.push([
+            c.fecha || '',
+            c.medico || '',
+            c.especialidad || '',
+            c.titulo || '',
+            c.observaciones || '',
+            c.archivo_nombre || ''
+          ]);
+        });
+      } else if (tipo === 'analisis') {
+        headers = ['fecha', 'edad', 'pais', 'colesterol', 'hdl', 'ldl', 'trigliceridos', 'creatinina', 'glucosa', 'sodio', 'potasio', 'psa', 'b12', 'magnesio', 'archivo'];
+        lista.forEach(c => {
+          filas.push([
+            c.fecha || '',
+            c.edad || '',
+            c.pais || '',
+            c.colesterol_total || '',
+            c.hdl_bueno || '',
+            c.ldl_malo || '',
+            c.trigliceridos || '',
+            c.creatinina || '',
+            c.glucosa || '',
+            c.sodio || '',
+            c.potasio || '',
+            c.psa || '',
+            c.b12 || '',
+            c.magnesio || '',
+            c.archivo_nombre || ''
+          ]);
+        });
+      } else if (tipo === 'otras') {
+        headers = ['fecha', 'tipo', 'profesional', 'observaciones', 'archivo'];
+        lista.forEach(c => {
+          filas.push([
+            c.fecha || '',
+            c.especialidad || '',
+            c.medico || '',
+            c.observaciones || '',
+            c.archivo_nombre || ''
+          ]);
+        });
+      }
+
+      var csv = headers.join(',') + '\n';
+      filas.forEach(fila => {
+        var filaEscapada = fila.map(v => {
+          var valor = String(v);
+          if (valor.indexOf(',') !== -1 || valor.indexOf('"') !== -1 || valor.indexOf('\n') !== -1) {
+            return '"' + valor.replace(/"/g, '""') + '"';
+          }
+          return valor;
+        });
+        csv += filaEscapada.join(',') + '\n';
+      });
+
+      var fecha = new Date().toISOString().slice(0, 10);
+      var nombre = 'IPS_' + tipo.charAt(0).toUpperCase() + tipo.slice(1) + '_' + fecha + '.csv';
+      
+      var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = nombre;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     }
 
     // ===== MODALES =====
@@ -649,6 +702,7 @@ if (c.archivo_url) {
         document.getElementById('analisis-glucosa').value = '';
         document.getElementById('analisis-sodio').value = '';
         document.getElementById('analisis-potasio').value = '';
+        document.getElementById('analisis-b12').value = '';
         document.getElementById('analisis-magnesio').value = '';
         document.getElementById('analisis-vitamina').value = '';
         document.getElementById('analisis-psa').value = '';
@@ -730,7 +784,8 @@ if (c.archivo_url) {
             glucosa: parseFloat(document.getElementById('analisis-glucosa').value) || null,
             sodio: parseFloat(document.getElementById('analisis-sodio').value) || null,
             potasio: parseFloat(document.getElementById('analisis-potasio').value) || null,
-            magnesio: parseFloat(document.getElementById('analisis-magnesio').value) || null,
+            b12: parseFloat(document.getElementById('analisis-b12').value) || null,
+            magnesio_valor: parseFloat(document.getElementById('analisis-magnesio').value) || null,
             vitamina_d: parseFloat(document.getElementById('analisis-vitamina').value) || null,
             psa: parseFloat(document.getElementById('analisis-psa').value) || null,
             observaciones: document.getElementById('analisis-obs').value
@@ -770,14 +825,81 @@ if (c.archivo_url) {
         var idExistente = document.getElementById(tipo === 'consulta' ? 'consulta-id' : (tipo === 'analisis' ? 'analisis-id' : 'otras-id')).value;
         
         if (idExistente) {
-          var result = await window.db.from('visitas_medicas').update(datos).eq('id', idExistente);
+          // Actualizar en visitas_medicas
+          var datosVisita = {};
+          for (var k in datos) {
+            if (k !== 'colesterol_total' && k !== 'hdl_bueno' && k !== 'ldl_malo' && k !== 'trigliceridos' && k !== 'creatinina' && k !== 'glucosa' && k !== 'sodio' && k !== 'potasio' && k !== 'b12' && k !== 'magnesio_valor' && k !== 'vitamina_d' && k !== 'psa' && k !== 'edad') {
+              datosVisita[k] = datos[k];
+            }
+          }
+          var result = await window.db.from('visitas_medicas').update(datosVisita).eq('id', idExistente);
           if (result.error) throw result.error;
+
+          // Si es analisis, actualizar valores
+          if (tipo === 'analisis') {
+            var datosValores = {
+              edad: datos.edad,
+              pais: datos.pais,
+              colesterol_total: datos.colesterol_total,
+              hdl_bueno: datos.hdl_bueno,
+              ldl_malo: datos.ldl_malo,
+              trigliceridos: datos.trigliceridos,
+              creatinina: datos.creatinina,
+              glucosa: datos.glucosa,
+              sodio: datos.sodio,
+              potasio: datos.potasio,
+              b12: datos.b12,
+              magnesio_valor: datos.magnesio_valor,
+              vitamina_d: datos.vitamina_d,
+              psa: datos.psa
+            };
+            var checkValores = await window.db.from('analisis_valores').select('id').eq('analisis_id', idExistente).limit(1);
+            if (checkValores.data && checkValores.data.length > 0) {
+              await window.db.from('analisis_valores').update(datosValores).eq('analisis_id', idExistente);
+            } else {
+              datosValores.analisis_id = idExistente;
+              datosValores.user_id = session.user.id;
+              datosValores.fecha = datos.fecha;
+              await window.db.from('analisis_valores').insert([datosValores]);
+            }
+          }
         } else {
-          var result = await window.db.from('visitas_medicas').insert([datos]);
-          if (result.error) throw result.error;
+          // Insertar nuevo
+          var datosVisita = {};
+          for (var k2 in datos) {
+            if (k2 !== 'colesterol_total' && k2 !== 'hdl_bueno' && k2 !== 'ldl_malo' && k2 !== 'trigliceridos' && k2 !== 'creatinina' && k2 !== 'glucosa' && k2 !== 'sodio' && k2 !== 'potasio' && k2 !== 'b12' && k2 !== 'magnesio_valor' && k2 !== 'vitamina_d' && k2 !== 'psa' && k2 !== 'edad') {
+              datosVisita[k2] = datos[k2];
+            }
+          }
+          var result2 = await window.db.from('visitas_medicas').insert([datosVisita]).select();
+          if (result2.error) throw result2.error;
+
+          // Si es analisis, insertar valores
+          if (tipo === 'analisis') {
+            var idNuevo = result2.data[0].id;
+            var datosValores2 = {
+              user_id: session.user.id,
+              analisis_id: idNuevo,
+              fecha: datos.fecha,
+              edad: datos.edad,
+              pais: datos.pais,
+              colesterol_total: datos.colesterol_total,
+              hdl_bueno: datos.hdl_bueno,
+              ldl_malo: datos.ldl_malo,
+              trigliceridos: datos.trigliceridos,
+              creatinina: datos.creatinina,
+              glucosa: datos.glucosa,
+              sodio: datos.sodio,
+              potasio: datos.potasio,
+              b12: datos.b12,
+              magnesio_valor: datos.magnesio_valor,
+              vitamina_d: datos.vitamina_d,
+              psa: datos.psa
+            };
+            await window.db.from('analisis_valores').insert([datosValores2]);
+          }
         }
 
-        // Cerrar modal y recargar
         if (tipo === 'consulta') modalConsulta.hide();
         else if (tipo === 'analisis') modalAnalisis.hide();
         else if (tipo === 'otras') modalOtras.hide();
@@ -790,7 +912,7 @@ if (c.archivo_url) {
     }
 
     function editarRegistro(tipo, id) {
-      var lista = todosLosDatos[tipo === 'consulta' ? 'consulta' : (tipo === 'analisis' ? 'analisis' : 'otras')];
+      var lista = todosLosDatos[tipo];
       var item = lista.find(x => x.id === id);
       if (!item) return;
 
@@ -817,6 +939,7 @@ if (c.archivo_url) {
         document.getElementById('analisis-glucosa').value = item.glucosa || '';
         document.getElementById('analisis-sodio').value = item.sodio || '';
         document.getElementById('analisis-potasio').value = item.potasio || '';
+        document.getElementById('analisis-b12').value = item.b12 || '';
         document.getElementById('analisis-magnesio').value = item.magnesio || '';
         document.getElementById('analisis-vitamina').value = item.vitamina_d || '';
         document.getElementById('analisis-psa').value = item.psa || '';
@@ -834,122 +957,13 @@ if (c.archivo_url) {
       }
     }
 
-    // ===== VER ARCHIVOS ADJUNTOS =====
-    async function verArchivo(path) {
-      if (!path) return;
-      try {
-        // Pedir a Supabase una URL firmada (valida 60 minutos)
-        var result = await window.db.storage
-          .from('analisis-medicos')
-          .createSignedUrl(path, 3600);
-        
-        if (result.error) {
-          alert('Error al obtener el archivo: ' + result.error.message);
-          return;
-        }
-        
-        // Abrir en nueva pestaÃ±a
-        window.open(result.data.signedUrl, '_blank');
-        
-      } catch (error) {
-        alert('Error: ' + error.message);
-      }
-    }
-    
     async function eliminarRegistro(id) {
       if (!confirm('Eliminar este registro?')) return;
+      await window.db.from('analisis_valores').delete().eq('analisis_id', id);
       var result = await window.db.from('visitas_medicas').delete().eq('id', id);
       if (result.error) { alert('Error: ' + result.error.message); return; }
       await cargarTodo();
     }
-
-    // ===== EXPORTAR A CSV =====
-    function exportarCSV(tipo) {
-      var lista = todosLosDatos[tipo];
-      if (!lista || lista.length === 0) {
-        alert('No hay datos para exportar.');
-        return;
-      }
-
-      var headers = [];
-      var filas = [];
-
-      if (tipo === 'consulta') {
-        headers = ['fecha', 'medico', 'especialidad', 'titulo', 'observaciones', 'archivo'];
-        lista.forEach(c => {
-          filas.push([
-            c.fecha || '',
-            c.medico || '',
-            c.especialidad || '',
-            c.titulo || '',
-            c.observaciones || '',
-            c.archivo_nombre || ''
-          ]);
-        });     
-      } else if (tipo === 'analisis') {
-        headers = ['fecha', 'edad', 'pais', 'colesterol', 'hdl', 'ldl', 'trigliceridos', 'creatinina', 'glucosa', 'sodio', 'potasio', 'psa', 'b12', 'magnesio', 'archivo'];
-        lista.forEach(c => {
-          filas.push([
-            c.fecha || '',
-            c.edad || '',
-            c.pais || '',
-            c.colesterol_total || '',
-            c.hdl_bueno || '',
-            c.ldl_malo || '',
-            c.trigliceridos || '',
-            c.creatinina || '',
-            c.glucosa || '',
-            c.sodio || '',
-            c.potasio || '',
-            c.psa || '',
-            c.b12 || '',
-            c.magnesio || '',
-            c.archivo_nombre || ''
-          ]);
-        });
-      } 
-      } else if (tipo === 'otras') {
-        headers = ['fecha', 'tipo', 'profesional', 'observaciones', 'archivo'];
-        lista.forEach(c => {
-          filas.push([
-            c.fecha || '',
-            c.especialidad || '',
-            c.medico || '',
-            c.observaciones || '',
-            c.archivo_nombre || ''
-          ]);
-        });
-      }
-
-      // Armar el CSV
-      var csv = headers.join(',') + '\n';
-      filas.forEach(fila => {
-        var filaEscapada = fila.map(v => {
-          var valor = String(v);
-          if (valor.indexOf(',') !== -1 || valor.indexOf('"') !== -1 || valor.indexOf('\n') !== -1) {
-            return '"' + valor.replace(/"/g, '""') + '"';
-          }
-          return valor;
-        });
-        csv += filaEscapada.join(',') + '\n';
-      });
-
-      // Descargar
-      var fecha = new Date().toISOString().slice(0, 10);
-      var nombre = 'IPS_' + tipo.charAt(0).toUpperCase() + tipo.slice(1) + '_' + fecha + '.csv';
-      
-      // Agregar BOM para que Excel abra bien los acentos
-      var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = nombre;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-    
   </script>
 </body>
 </html>
