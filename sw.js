@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ips-control-v48';
+const CACHE_NAME = 'ips-control-v54';
 const APP_ASSETS = [
   './',
   './index.html',
