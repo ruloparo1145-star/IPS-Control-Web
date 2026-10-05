@@ -10,6 +10,8 @@
     .bg-ips { background-color: #50B9C0 !important; }
     .btn-ips { background-color: #50B9C0; border-color: #50B9C0; color: white; }
     .btn-ips:hover { background-color: #3da8af; border-color: #3da8af; color: white; }
+    .btn-rtf { background-color: #6c757d; border-color: #6c757d; color: white; }
+    .btn-rtf:hover { background-color: #5a6268; border-color: #5a6268; color: white; }
     .card { background-color: #ffffff; }
     .table-sm td, .table-sm th { padding: 0.4rem; font-size: 0.85rem; vertical-align: middle; }
     .nav-tabs .nav-link { color: #50B9C0; font-weight: 600; }
@@ -55,6 +57,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5>Consultas Medicas</h5>
           <div>
+            <button class="btn btn-rtf me-2" onclick="exportarRTF('consulta')">Exportar RTF</button>
             <button class="btn btn-success me-2" onclick="exportarCSV('consulta')">Exportar CSV</button>
             <button class="btn btn-ips" onclick="abrirModal('consulta')">+ Nueva Consulta</button>
           </div>
@@ -86,6 +89,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5>Analisis de Sangre y Estudios</h5>
           <div>
+            <button class="btn btn-rtf me-2" onclick="exportarRTF('analisis')">Exportar RTF</button>
             <button class="btn btn-success me-2" onclick="exportarCSV('analisis')">Exportar CSV</button>
             <button class="btn btn-ips" onclick="abrirModal('analisis')">+ Nuevo Analisis</button>
           </div>
@@ -125,6 +129,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h5>Otras Consultas (Dentista, Oftalmologo, etc.)</h5>
           <div>
+            <button class="btn btn-rtf me-2" onclick="exportarRTF('otras')">Exportar RTF</button>
             <button class="btn btn-success me-2" onclick="exportarCSV('otras')">Exportar CSV</button>
             <button class="btn btn-ips" onclick="abrirModal('otras')">+ Nueva Consulta</button>
           </div>
@@ -378,6 +383,11 @@
   <script src="js/supabase.js"></script>
   <script src="js/auth.js"></script>
 
+  <script type="module">
+    import { exportarGrupoRTF } from './js/exportarVisitasRTF.js';
+    window.exportarVisitasRTFModulo = exportarGrupoRTF;
+  </script>
+
   <script>
     var todosLosDatos = { consulta: [], analisis: [], otras: [] };
     var tabActual = 'consulta';
@@ -570,6 +580,22 @@
       tabActual = tipo;
     }
 
+    // ===== EXPORTAR RTF =====
+    async function exportarRTF(tipo) {
+      var lista = todosLosDatos[tipo];
+      if (!lista || lista.length === 0) {
+        alert('No hay datos para exportar.');
+        return;
+      }
+      try {
+        await window.exportarVisitasRTFModulo(tipo, lista);
+      } catch (error) {
+        alert('Error al exportar RTF: ' + error.message);
+        console.error(error);
+      }
+    }
+
+    // ===== EXPORTAR CSV =====
     function exportarCSV(tipo) {
       var lista = todosLosDatos[tipo];
       if (!lista || lista.length === 0) {
@@ -773,7 +799,6 @@
           }
         }
 
-        // Separar datos: los de visita_medica y los de analisis_valores
         var camposAnalisis = ['colesterol_total', 'hdl_bueno', 'ldl_malo', 'trigliceridos', 'creatinina', 'glucosa', 'sodio', 'potasio', 'b12', 'magnesio_valor', 'vitamina_d', 'psa', 'edad'];
         
         var datosVisita = {};
@@ -789,7 +814,6 @@
         var idExistente = document.getElementById(tipo === 'consulta' ? 'consulta-id' : (tipo === 'analisis' ? 'analisis-id' : 'otras-id')).value;
 
         if (idExistente) {
-          // ACTUALIZAR
           var resultUpd = await window.db.from('visitas_medicas').update(datosVisita).eq('id', idExistente);
           if (resultUpd.error) throw resultUpd.error;
 
@@ -806,7 +830,6 @@
             }
           }
         } else {
-          // INSERTAR NUEVO
           var resultIns = await window.db.from('visitas_medicas').insert([datosVisita]).select();
           if (resultIns.error) throw resultIns.error;
 
