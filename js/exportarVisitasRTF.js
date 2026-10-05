@@ -20,7 +20,7 @@ function exportarVisitasRTF(tipo, lista) {
       titulo: 'Analisis de Sangre y Estudios',
       headers: ['Fecha', 'Edad', 'Pais', 'Colest.', 'HDL', 'LDL', 'Triglic.', 'Creat.', 'Gluc.', 'Sodio', 'Potasio', 'PSA'],
       fields: ['fecha', 'edad', 'pais', 'colesterol_total', 'hdl_bueno', 'ldl_malo', 'trigliceridos', 'creatinina', 'glucosa', 'sodio', 'potasio', 'psa'],
-      anchos: [1000, 600, 1200, 800, 700, 700, 800, 700, 700, 700, 800, 700]
+      anchos: [1400, 600, 1200, 800, 700, 700, 800, 700, 700, 700, 800, 700]
     },
     otras: {
       titulo: 'Otras Consultas',
