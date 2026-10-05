@@ -382,12 +382,7 @@
   <script src="js/config.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/auth.js"></script>
-
-  <script type="module">
-    import { exportarGrupoRTF } from './js/exportarVisitasRTF.js';
-    window.exportarVisitasRTFModulo = exportarGrupoRTF;
-  </script>
-
+  <script src="js/exportarVisitasRTF.js"></script>
   <script>
     var todosLosDatos = { consulta: [], analisis: [], otras: [] };
     var tabActual = 'consulta';
@@ -581,14 +576,14 @@
     }
 
     // ===== EXPORTAR RTF =====
-    async function exportarRTF(tipo) {
+   function exportarRTF(tipo) {
       var lista = todosLosDatos[tipo];
       if (!lista || lista.length === 0) {
         alert('No hay datos para exportar.');
         return;
       }
       try {
-        await window.exportarVisitasRTFModulo(tipo, lista);
+        exportarVisitasRTF(tipo, lista);
       } catch (error) {
         alert('Error al exportar RTF: ' + error.message);
         console.error(error);
