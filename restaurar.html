@@ -37,9 +37,8 @@
     <div class="row justify-content-center">
       <div class="col-md-8">
 
-        <div class="alert alert-danger" role="alert">
-          <strong>ATENCION:</strong> Esta operacion va a <strong>agregar</strong> los datos del backup a la base actual.
-          No reemplaza los datos existentes. Si restauras el mismo backup dos veces, vas a duplicar los registros.
+        <div class="alert alert-warning" role="alert">
+          <strong>ATENCION:</strong> Antes de restaurar, asegurate de tener un backup actual por si algo sale mal.
         </div>
 
         <div class="card shadow-sm mb-3">
@@ -56,20 +55,53 @@
 
         <div id="paso-confirmar" class="card shadow-sm mb-3" style="display:none;">
           <div class="card-header bg-white">
-            <h5 class="mb-0">Paso 2: Confirmar restauracion</h5>
+            <h5 class="mb-0">Paso 2: Elegir tipo de restauracion</h5>
           </div>
           <div class="card-body">
             <h6>Resumen del backup:</h6>
             <ul id="resumen-backup"></ul>
-            <div class="form-check mb-3">
-              <input class="form-check-input" type="checkbox" id="confirmar-restaurar">
-              <label class="form-check-label" for="confirmar-restaurar">
-                Entiendo que esto va a agregar los datos a la base actual
-              </label>
+
+            <hr>
+
+            <!-- Opcion 1: Agregar -->
+            <div class="card border-success mb-3">
+              <div class="card-body">
+                <h6 class="text-success">Opcion 1: Agregar a los datos actuales</h6>
+                <p class="small text-muted mb-2">
+                  Los datos del backup se <strong>suman</strong> a los que ya tenes. 
+                  Si restauras dos veces el mismo backup, vas a tener duplicados.
+                </p>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="confirmar-agregar">
+                  <label class="form-check-label small" for="confirmar-agregar">
+                    Entiendo que esto va a <strong>agregar</strong> los datos
+                  </label>
+                </div>
+                <button class="btn btn-ips" onclick="restaurarBackup(false)" id="btn-restaurar-agregar" disabled>
+                  Restaurar Agregando
+                </button>
+              </div>
             </div>
-            <button class="btn btn-danger" onclick="restaurarBackup()" id="btn-restaurar" disabled>
-              Restaurar Ahora
-            </button>
+
+            <!-- Opcion 2: Reemplazar -->
+            <div class="card border-danger">
+              <div class="card-body">
+                <h6 class="text-danger">Opcion 2: Reemplazar todo</h6>
+                <p class="small text-muted mb-2">
+                  <strong>BORRA</strong> todos tus datos actuales (cobros, visitas medicas y analisis) 
+                  y despues restaura el backup. <strong>Esta opcion es irreversible.</strong>
+                </p>
+                <div class="form-check mb-2">
+                  <input class="form-check-input" type="checkbox" id="confirmar-reemplazar">
+                  <label class="form-check-label small text-danger" for="confirmar-reemplazar">
+                    Entiendo que esto va a <strong>BORRAR TODO</strong> y reemplazarlo con el backup
+                  </label>
+                </div>
+                <button class="btn btn-danger" onclick="restaurarBackup(true)" id="btn-restaurar-reemplazar" disabled>
+                  Restaurar Reemplazando Todo
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -108,8 +140,11 @@
       var session = await verificarSesion();
       if (!session) window.location.href = 'login.html';
 
-      document.getElementById('confirmar-restaurar').addEventListener('change', function(e) {
-        document.getElementById('btn-restaurar').disabled = !e.target.checked;
+      document.getElementById('confirmar-agregar').addEventListener('change', function(e) {
+        document.getElementById('btn-restaurar-agregar').disabled = !e.target.checked;
+      });
+      document.getElementById('confirmar-reemplazar').addEventListener('change', function(e) {
+        document.getElementById('btn-restaurar-reemplazar').disabled = !e.target.checked;
       });
     });
 
@@ -154,8 +189,17 @@
       }
     }
 
-    async function restaurarBackup() {
+    async function restaurarBackup(reemplazar) {
       if (!backupActual) return;
+
+      // Si es reemplazar, pedir confirmacion extra
+      if (reemplazar) {
+        var confirmacion = prompt('ATENCION: Esto va a BORRAR TODOS tus datos actuales. Escribi la palabra BORRAR (en mayusculas) para confirmar:');
+        if (confirmacion !== 'BORRAR') {
+          alert('Restauracion cancelada.');
+          return;
+        }
+      }
 
       document.getElementById('paso-log').style.display = 'block';
       document.getElementById('log-output').innerHTML = 'Iniciando restauracion...';
@@ -171,6 +215,34 @@
       var mapaVisitas = {};  // id_viejo -> id_nuevo
 
       try {
+        // ============================================
+        // PASO 0: SI ES REEMPLAZAR, BORRAR TODO
+        // ============================================
+        if (reemplazar) {
+          log('=====================================');
+          log('MODO REEMPLAZAR ACTIVADO');
+          log('Borrando todos los datos del usuario...');
+          log('=====================================');
+
+          log('Borrando analisis_valores...');
+          var delVal = await window.db.from('analisis_valores').delete().eq('user_id', userId);
+          if (delVal.error) log('ERROR borrando valores: ' + delVal.error.message);
+          else log('Analisis_valores borrados OK');
+
+          log('Borrando visitas_medicas...');
+          var delVis = await window.db.from('visitas_medicas').delete().eq('user_id', userId);
+          if (delVis.error) log('ERROR borrando visitas: ' + delVis.error.message);
+          else log('Visitas_medicas borradas OK');
+
+          log('Borrando cobros...');
+          var delCob = await window.db.from('cobros').delete().eq('user_id', userId);
+          if (delCob.error) log('ERROR borrando cobros: ' + delCob.error.message);
+          else log('Cobros borrados OK');
+
+          log('Todos los datos anteriores fueron eliminados.');
+          log('=====================================');
+        }
+
         // ============================================
         // PASO 1: Restaurar COBROS
         // ============================================
@@ -232,11 +304,11 @@
               categoria: visita.categoria
             };
 
-            var result = await window.db.from('visitas_medicas').insert([copiaVisita]).select();
-            if (result.error) {
-              log('ERROR visita id_viejo=' + idViejo + ': ' + result.error.message);
+            var resultVis = await window.db.from('visitas_medicas').insert([copiaVisita]).select();
+            if (resultVis.error) {
+              log('ERROR visita id_viejo=' + idViejo + ': ' + resultVis.error.message);
             } else {
-              var idNuevo = result.data[0].id;
+              var idNuevo = resultVis.data[0].id;
               mapaVisitas[idViejo] = idNuevo;
               visitasInsertadas++;
             }
@@ -286,9 +358,9 @@
               observaciones: valor.observaciones
             };
 
-            var result = await window.db.from('analisis_valores').insert([copiaValor]);
-            if (result.error) {
-              log('ERROR valor id_analisis_viejo=' + analisisIdViejo + ': ' + result.error.message);
+            var resultVal = await window.db.from('analisis_valores').insert([copiaValor]);
+            if (resultVal.error) {
+              log('ERROR valor id_analisis_viejo=' + analisisIdViejo + ': ' + resultVal.error.message);
             } else {
               valoresInsertados++;
             }
