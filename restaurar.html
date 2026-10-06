@@ -20,6 +20,7 @@
       border-radius: 8px;
       max-height: 400px;
       overflow-y: auto;
+      white-space: pre-wrap;
     }
   </style>
 </head>
@@ -36,13 +37,11 @@
     <div class="row justify-content-center">
       <div class="col-md-8">
 
-        <!-- AVISO IMPORTANTE -->
         <div class="alert alert-danger" role="alert">
-          <strong>⚠️ ATENCION:</strong> Esta operacion va a <strong>agregar</strong> los datos del backup a la base actual.
+          <strong>ATENCION:</strong> Esta operacion va a <strong>agregar</strong> los datos del backup a la base actual.
           No reemplaza los datos existentes. Si restauras el mismo backup dos veces, vas a duplicar los registros.
         </div>
 
-        <!-- PASO 1: SELECCIONAR ARCHIVO -->
         <div class="card shadow-sm mb-3">
           <div class="card-header bg-white">
             <h5 class="mb-0">Paso 1: Seleccionar archivo de backup</h5>
@@ -55,7 +54,6 @@
           </div>
         </div>
 
-        <!-- PASO 2: CONFIRMAR -->
         <div id="paso-confirmar" class="card shadow-sm mb-3" style="display:none;">
           <div class="card-header bg-white">
             <h5 class="mb-0">Paso 2: Confirmar restauracion</h5>
@@ -75,7 +73,6 @@
           </div>
         </div>
 
-        <!-- PASO 3: LOG DE PROGRESO -->
         <div id="paso-log" class="card shadow-sm mb-3" style="display:none;">
           <div class="card-header bg-white">
             <h5 class="mb-0">Progreso</h5>
@@ -180,16 +177,22 @@
         if (backupActual.cobros && backupActual.cobros.length > 0) {
           log('Restaurando ' + backupActual.cobros.length + ' cobros...');
 
-          // Eliminar id y user_id originales, poner el nuevo user_id
           var cobrosLimpios = backupActual.cobros.map(function(c) {
-            var copia = Object.assign({}, c);
-            delete copia.id;
-            delete copia.created_at;
-            copia.user_id = userId;
-            return copia;
+            return {
+              user_id: userId,
+              recibo_vision_fecha: c.recibo_vision_fecha,
+              recibo_fecha_pago_arg: c.recibo_fecha_pago_arg,
+              monto_pesos: c.monto_pesos,
+              transferencia_fecha: c.transferencia_fecha,
+              monto_euros: c.monto_euros,
+              cotizacion_banco_euro: c.cotizacion_banco_euro,
+              banco_detalle: c.banco_detalle,
+              obs: c.obs,
+              supervivencia_enviada: c.supervivencia_enviada,
+              supervivencia_recibida: c.supervivencia_recibida
+            };
           });
 
-          // Insertar en lotes de 50
           var insertados = 0;
           for (var i = 0; i < cobrosLimpios.length; i += 50) {
             var lote = cobrosLimpios.slice(i, i + 50);
@@ -205,23 +208,31 @@
         }
 
         // ============================================
-        // PASO 2: Restaurar VISITAS MEDICAS (una por una para mapear IDs)
+        // PASO 2: Restaurar VISITAS MEDICAS
         // ============================================
         if (backupActual.visitas_medicas && backupActual.visitas_medicas.length > 0) {
           log('Restaurando ' + backupActual.visitas_medicas.length + ' visitas medicas...');
-          log('(esto puede tardar, se hace una por una para mapear IDs)');
 
           var visitasInsertadas = 0;
           for (var j = 0; j < backupActual.visitas_medicas.length; j++) {
             var visita = backupActual.visitas_medicas[j];
             var idViejo = visita.id;
 
-            var copia = Object.assign({}, visita);
-            delete copia.id;
-            delete copia.created_at;
-            copia.user_id = userId;
+            var copiaVisita = {
+              user_id: userId,
+              tipo: visita.tipo,
+              fecha: visita.fecha,
+              medico: visita.medico,
+              especialidad: visita.especialidad,
+              titulo: visita.titulo,
+              observaciones: visita.observaciones,
+              resultados: visita.resultados,
+              archivo_url: visita.archivo_url,
+              archivo_nombre: visita.archivo_nombre,
+              categoria: visita.categoria
+            };
 
-            var result = await window.db.from('visitas_medicas').insert([copia]).select();
+            var result = await window.db.from('visitas_medicas').insert([copiaVisita]).select();
             if (result.error) {
               log('ERROR visita id_viejo=' + idViejo + ': ' + result.error.message);
             } else {
@@ -230,7 +241,6 @@
               visitasInsertadas++;
             }
 
-            // Log cada 5 visitas
             if ((j + 1) % 5 === 0 || j === backupActual.visitas_medicas.length - 1) {
               log('Visitas insertadas: ' + visitasInsertadas + '/' + backupActual.visitas_medicas.length);
             }
@@ -240,7 +250,7 @@
         }
 
         // ============================================
-        // PASO 3: Restaurar ANALISIS_VALORES (con IDs mapeados)
+        // PASO 3: Restaurar ANALISIS_VALORES
         // ============================================
         if (backupActual.analisis_valores && backupActual.analisis_valores.length > 0) {
           log('Restaurando ' + backupActual.analisis_valores.length + ' valores de analisis...');
@@ -256,13 +266,27 @@
               continue;
             }
 
-            var copia = Object.assign({}, valor);
-            delete copia.id;
-            delete copia.created_at;
-            copia.user_id = userId;
-            copia.analisis_id = analisisIdNuevo;  // Usar el ID nuevo
+            var copiaValor = {
+              user_id: userId,
+              analisis_id: analisisIdNuevo,
+              fecha: valor.fecha,
+              edad: valor.edad,
+              pais: valor.pais,
+              colesterol_total: valor.colesterol_total,
+              hdl_bueno: valor.hdl_bueno,
+              ldl_malo: valor.ldl_malo,
+              trigliceridos: valor.trigliceridos,
+              creatinina: valor.creatinina,
+              glucosa: valor.glucosa,
+              sodio: valor.sodio,
+              potasio: valor.potasio,
+              magnesio_valor: valor.magnesio,
+              vitamina_d: valor.vitamina_d,
+              psa: valor.psa,
+              observaciones: valor.observaciones
+            };
 
-            var result = await window.db.from('analisis_valores').insert([copia]);
+            var result = await window.db.from('analisis_valores').insert([copiaValor]);
             if (result.error) {
               log('ERROR valor id_analisis_viejo=' + analisisIdViejo + ': ' + result.error.message);
             } else {
