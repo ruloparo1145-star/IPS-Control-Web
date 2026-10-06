@@ -278,42 +278,121 @@
       if (diasSinBackup >= 30) { aviso.classList.remove('d-none'); }
     }
 
-    // ===== BACKUP COMPLETO (incluye visitas medicas y analisis) =====
+    // ===== BACKUP COMPLETO (formato identico a app Windows) =====
     async function backupRapido() {
       const btn = event.target;
       const textoOriginal = btn.innerText;
       btn.innerText = 'Preparando...';
       btn.disabled = true;
       try {
-        // 1. Descargar cobros
-        const cobros = await window.db.from('cobros').select('*').order('recibo_vision_fecha', { ascending: false });
+        // 1. Descargar cobros (orden ASCENDENTE)
+        const cobros = await window.db
+          .from('cobros')
+          .select('*')
+          .order('recibo_vision_fecha', { ascending: true });
         if (cobros.error) throw cobros.error;
 
-        // 2. Descargar visitas medicas
-        const visitas = await window.db.from('visitas_medicas').select('*').order('fecha', { ascending: false });
+        // 2. Descargar visitas medicas (orden ASCENDENTE)
+        const visitas = await window.db
+          .from('visitas_medicas')
+          .select('*')
+          .order('fecha', { ascending: true });
         if (visitas.error) throw visitas.error;
 
-        // 3. Descargar valores de analisis
-        const valores = await window.db.from('analisis_valores').select('*').order('fecha', { ascending: false });
+        // 3. Descargar valores de analisis (orden ASCENDENTE)
+        const valores = await window.db
+          .from('analisis_valores')
+          .select('*')
+          .order('fecha', { ascending: true });
         if (valores.error) throw valores.error;
 
-        // 4. Armar el backup completo
+        // 4. Normalizar cada tabla al formato Windows
+
+        // --- COBROS ---
+        const cobrosWin = (cobros.data || []).map(function(c) {
+          return {
+            id: c.id,
+            user_id: 'local',
+            tipo: c.banco_detalle && c.banco_detalle.toLowerCase().indexOf('supervivencia') !== -1
+              ? 'Supervivencia'
+              : 'Sueldo',
+            recibo_vision_fecha: c.recibo_vision_fecha,
+            recibo_fecha_pago_arg: c.recibo_fecha_pago_arg,
+            monto_pesos: c.monto_pesos,
+            transferencia_fecha: c.transferencia_fecha,
+            monto_euros: c.monto_euros,
+            cotizacion_banco_euro: c.cotizacion_banco_euro,
+            cotizacion_calculada_euro: null,
+            banco_detalle: c.banco_detalle,
+            obs: c.obs,
+            supervivencia_enviada: c.supervivencia_enviada,
+            supervivencia_recibida: c.supervivencia_recibida,
+            proxima_supervivencia: null,
+            created_at: c.created_at || new Date().toISOString().replace('T', ' ').slice(0, 19)
+          };
+        });
+
+        // --- VISITAS MEDICAS ---
+        const visitasWin = (visitas.data || []).map(function(v) {
+          return {
+            id: v.id,
+            user_id: 'local',
+            tipo: v.tipo,
+            fecha: v.fecha,
+            medico: v.medico || null,
+            especialidad: v.especialidad || null,
+            titulo: v.titulo || null,
+            observaciones: v.observaciones || null,
+            resultados: v.resultados || null,
+            archivo_url: v.archivo_url || null,
+            archivo_nombre: v.archivo_nombre || null,
+            categoria: v.categoria || null,
+            created_at: v.created_at || new Date().toISOString().replace('T', ' ').slice(0, 19)
+          };
+        });
+
+        // --- ANALISIS VALORES ---
+        const valoresWin = (valores.data || []).map(function(a) {
+          return {
+            id: a.id,
+            user_id: 'local',
+            analisis_id: a.analisis_id,
+            fecha: a.fecha,
+            edad: a.edad,
+            pais: a.pais,
+            colesterol_total: a.colesterol_total,
+            hdl_bueno: a.hdl_bueno,
+            ldl_malo: a.ldl_malo,
+            trigliceridos: a.trigliceridos,
+            creatinina: a.creatinina,
+            glucosa: a.glucosa,
+            sodio: a.sodio,
+            potasio: a.potasio,
+            magnesio: a.magnesio_valor || a.magnesio || null,
+            vitamina_d: a.vitamina_d || null,
+            psa: a.psa,
+            observaciones: a.observaciones || null,
+            created_at: a.created_at || new Date().toISOString().replace('T', ' ').slice(0, 19)
+          };
+        });
+
+        // 5. Armar el backup completo
         const backup = {
           app: 'IPS Control',
           version: '2.0',
           fecha_backup: new Date().toISOString(),
           email_usuario: document.getElementById('user-email').innerText,
           resumen: {
-            total_cobros: cobros.data.length,
-            total_visitas: visitas.data.length,
-            total_valores_analisis: valores.data.length
+            total_cobros: cobrosWin.length,
+            total_visitas: visitasWin.length,
+            total_valores_analisis: valoresWin.length
           },
-          cobros: cobros.data,
-          visitas_medicas: visitas.data,
-          analisis_valores: valores.data
+          cobros: cobrosWin,
+          visitas_medicas: visitasWin,
+          analisis_valores: valoresWin
         };
 
-        // 5. Descargar el archivo
+        // 6. Descargar el archivo
         const json = JSON.stringify(backup, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -325,7 +404,7 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         
-        // 6. Guardar fecha del ultimo backup
+        // 7. Guardar fecha del ultimo backup
         localStorage.setItem('ips_ultimo_backup', new Date().toISOString());
         const aviso = document.getElementById('aviso-backup');
         if (aviso) aviso.classList.add('d-none');
